@@ -1,0 +1,19 @@
+Start testing: Nov 03 02:29 IST
+----------------------------------------------------------
+1/1 Testing: LexerTests
+1/1 Test: LexerTests
+Command: "/Users/ayushanasane/Projects/newlang/build/lexer_tests"
+Directory: /Users/ayushanasane/Projects/newlang/build
+"LexerTests" start time: Nov 03 02:29 IST
+Output:
+----------------------------------------------------------
+All lexer tests passed!
+<end of output>
+Test time =   0.77 sec
+----------------------------------------------------------
+Test Passed.
+"LexerTests" end time: Nov 03 02:29 IST
+"LexerTests" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 03 02:29 IST

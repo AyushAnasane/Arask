@@ -2,10 +2,12 @@
 #include "lexer.hpp"
 #include <cctype>
 
+using namespace std;
+
 
 namespace newlang {
 
-Lexer::Lexer(const std::string& sourceCode)
+Lexer::Lexer(const string& sourceCode)
     : source(sourceCode) {}
 
 bool Lexer::isAtEnd() {
@@ -14,7 +16,13 @@ bool Lexer::isAtEnd() {
 
 char Lexer::advance() {
     char c = source[current++];
-    column++;
+     if (c == '\n') {
+        line++;
+        column = 1;
+    } else {
+        column++;
+    }
+
     return c;
 }
 
@@ -24,23 +32,23 @@ char Lexer::peek() {
 }
 
 void Lexer::addToken(TokenType type) {
-    std::string text = source.substr(start, current - start);
+    string text = source.substr(start, current - start);
 
     tokens.push_back({
         type,
         text,
-        line,
-        column - static_cast<int>(text.length())
+        startLine,
+        startColumn
     });
 }
 
 void Lexer::identifier() {
-    while (std::isalnum(
+    while (isalnum(
         static_cast<unsigned char>(peek())) || peek() == '_') {
         advance();
     }
 
-    std::string text = source.substr(start, current - start);
+    string text = source.substr(start, current - start);
 
     if (text == "let") {
         addToken(TokenType::Let);
@@ -54,7 +62,7 @@ void Lexer::identifier() {
 }
 
 void Lexer::number() {
-    while (std::isdigit(
+    while (isdigit(
         static_cast<unsigned char>(peek()))) {
         advance();
     }
@@ -63,6 +71,7 @@ void Lexer::number() {
 }
 
 void Lexer::scanToken() {
+
     char c = advance();
 
     switch (c) {
@@ -70,9 +79,7 @@ void Lexer::scanToken() {
             break;
 
         case '\n':
-            line++;
-            column = 1;
-            break;
+        break;
 
         case '+': addToken(TokenType::Plus); break;
         case '-': addToken(TokenType::Minus); break;
@@ -92,10 +99,10 @@ void Lexer::scanToken() {
             break;
 
         default:
-            if (std::isdigit(static_cast<unsigned char>(c))) {
+            if (isdigit(static_cast<unsigned char>(c))) {
                 number();
             }
-            else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            else if (isalpha(static_cast<unsigned char>(c)) || c == '_') {
                 identifier();
             }
             else {
@@ -105,9 +112,18 @@ void Lexer::scanToken() {
     }
 }
 
-std::vector<Token> Lexer::scanTokens() {
+vector<Token> Lexer::scanTokens() {
+
+    tokens.clear();
+    start = 0;
+    current = 0;
+    line = 1;
+    column = 1;
     while (!isAtEnd()) {
         start = current;
+        startLine = line;
+        startColumn = column;
+
         scanToken();
     }
 

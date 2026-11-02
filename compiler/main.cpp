@@ -1,8 +1,9 @@
 
 #include <iostream>
 #include "lexer/lexer.hpp"
+using namespace std;
 
-std::string tokenTypeName(newlang::TokenType type) {
+string tokenTypeName(newlang::TokenType type) {
     using newlang::TokenType;
 
     switch (type) {
@@ -27,14 +28,16 @@ std::string tokenTypeName(newlang::TokenType type) {
 }
 
 int main() {
-    std::string source = "let age = 19; print(age + 5);";
+    string source =
+    "let age = 19;\n"
+    "print(age);";
 
     newlang::Lexer lexer(source);
 
     auto tokens = lexer.scanTokens();
 
     for (const auto& token : tokens) {
-        std::cout
+        cout
             << tokenTypeName(token.type)
             << " | " << token.lexeme
             << " | Line: " << token.line
