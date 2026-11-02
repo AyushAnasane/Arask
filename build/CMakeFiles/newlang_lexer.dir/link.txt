@@ -1,2 +1,0 @@
-/usr/bin/ar qc libnewlang_lexer.a CMakeFiles/newlang_lexer.dir/compiler/lexer/lexer.cpp.o
-/usr/bin/ranlib libnewlang_lexer.a
