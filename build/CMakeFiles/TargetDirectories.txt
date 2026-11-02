@@ -1,0 +1,3 @@
+/Users/ayushanasane/Projects/newlang/build/CMakeFiles/newlang.dir
+/Users/ayushanasane/Projects/newlang/build/CMakeFiles/edit_cache.dir
+/Users/ayushanasane/Projects/newlang/build/CMakeFiles/rebuild_cache.dir
