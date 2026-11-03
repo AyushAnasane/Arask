@@ -96,8 +96,8 @@ Arask/
 Clone the repository:
 
 ```bash
-git clone https://github.com/AyushAnasane/NewLang.git
-cd NewLang
+git clone https://github.com/AyushAnasane/Arask.git
+cd Arask
 ```
 
 Configure and build:
