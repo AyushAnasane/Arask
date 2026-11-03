@@ -611,344 +611,344 @@ fn main() {
 | Field access | `value.field` |
 | Import | `import module;` |
 
-## Arask master project checklist
+## Arask project scope and feature overview
 
-This checklist tracks the complete language design, compiler, research directions, ecosystem, engines, and project quality requirements. A checkbox means the work is tracked here; it does not imply that the feature is already implemented.
+The following overview summarizes the language design, compiler capabilities, research directions, ecosystem, engines, and project quality requirements. Inclusion here describes the intended project scope; it does not imply that every feature is already implemented.
 
 ### Language foundation
 
-- [ ] General-purpose programming language
-- [ ] Readable syntax with low-level control
-- [ ] Native machine-code compilation
-- [ ] Cross-platform support for macOS, Windows, and Linux
-- [ ] Consistent language semantics across platforms
-- [ ] Modular language and compiler architecture
+- General-purpose programming language
+- Readable syntax with low-level control
+- Native machine-code compilation
+- Cross-platform support for macOS, Windows, and Linux
+- Consistent language semantics across platforms
+- Modular language and compiler architecture
 
 ### Language syntax and features
 
 **Variables and types**
 
-- [ ] Mutable variables (`let`)
-- [ ] Immutable bindings (`const`)
-- [ ] Type inference
-- [ ] Explicit type annotations
-- [ ] Signed integer types (`i32`, `i64`)
-- [ ] Floating-point types (`f32`, `f64`)
-- [ ] Boolean type
-- [ ] Character and string types
-- [ ] Arrays and collections
-- [ ] User-defined structures (`struct`)
-- [ ] Generics
-- [ ] Enums and additional user-defined types
+- Mutable variables (`let`)
+- Immutable bindings (`const`)
+- Type inference
+- Explicit type annotations
+- Signed integer types (`i32`, `i64`)
+- Floating-point types (`f32`, `f64`)
+- Boolean type
+- Character and string types
+- Arrays and collections
+- User-defined structures (`struct`)
+- Generics
+- Enums and additional user-defined types
 
 **Functions**
 
-- [ ] Function declarations (`fn`)
-- [ ] Typed parameters
-- [ ] Return types
-- [ ] Function calls
-- [ ] Return statements
-- [ ] `main` entry point
-- [ ] Recursion
-- [ ] Function overloading (design consideration)
+- Function declarations (`fn`)
+- Typed parameters
+- Return types
+- Function calls
+- Return statements
+- `main` entry point
+- Recursion
+- Function overloading (design consideration)
 
 **Operators**
 
-- [ ] Arithmetic: `+`, `-`, `*`, `/`, `%`
-- [ ] Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
-- [ ] Logical: `&&`, `||`, `!`
-- [ ] Assignment: `=`
-- [ ] Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
-- [ ] Bitwise: `&`, `|`, `^`, `~`
-- [ ] Bitwise shifts: `<<`, `>>`
-- [ ] Bitwise compound assignment: `&=`, `|=`, `^=`, `<<=`, `>>=`
-- [ ] Increment and decrement: `++`, `--`
-- [ ] Unary operators
-- [ ] Operator precedence and associativity
-- [ ] Single evaluation of compound-assignment targets
+- Arithmetic: `+`, `-`, `*`, `/`, `%`
+- Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
+- Logical: `&&`, `||`, `!`
+- Assignment: `=`
+- Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
+- Bitwise: `&`, `|`, `^`, `~`
+- Bitwise shifts: `<<`, `>>`
+- Bitwise compound assignment: `&=`, `|=`, `^=`, `<<=`, `>>=`
+- Increment and decrement: `++`, `--`
+- Unary operators
+- Operator precedence and associativity
+- Single evaluation of compound-assignment targets
 
 **Conditions and control flow**
 
-- [ ] `if`
-- [ ] `else`
-- [ ] Nested conditions
-- [ ] `break`
-- [ ] `continue`
-- [ ] `return`
-- [ ] Lexical variable scoping
-- [ ] Error handling and exceptions (design decision)
+- `if`
+- `else`
+- Nested conditions
+- `break`
+- `continue`
+- `return`
+- Lexical variable scoping
+- Error handling and exceptions (design decision)
 
 ### Complete loop system
 
 **Range loops**
 
-- [ ] Ascending range — exclusive endpoint
-- [ ] Ascending range — inclusive endpoint
-- [ ] Descending range — exclusive endpoint
-- [ ] Descending range — inclusive endpoint
-- [ ] Custom step
-- [ ] Descending custom step
-- [ ] Inclusive custom-step range
-- [ ] Runtime-defined bounds
-- [ ] Equal start/end behaviour
-- [ ] Zero-step rejection
-- [ ] Overflow-safe iteration
+- Ascending range — exclusive endpoint
+- Ascending range — inclusive endpoint
+- Descending range — exclusive endpoint
+- Descending range — inclusive endpoint
+- Custom step
+- Descending custom step
+- Inclusive custom-step range
+- Runtime-defined bounds
+- Equal start/end behaviour
+- Zero-step rejection
+- Overflow-safe iteration
 
 **Controlled loops**
 
-- [ ] Traditional initialization, condition, and update
-- [ ] Arbitrary update expressions
-- [ ] Multiplication and division updates
-- [ ] Multiple initialization variables
-- [ ] Multiple update expressions
-- [ ] Nested loops
+- Traditional initialization, condition, and update
+- Arbitrary update expressions
+- Multiplication and division updates
+- Multiple initialization variables
+- Multiple update expressions
+- Nested loops
 
 **Loop control**
 
-- [ ] `break`
-- [ ] `continue`
-- [ ] `return` inside loops
-- [ ] Labeled loops
-- [ ] Labeled break
-- [ ] Correct loop-variable scope
+- `break`
+- `continue`
+- `return` inside loops
+- Labeled loops
+- Labeled break
+- Correct loop-variable scope
 
 **Collection iteration**
 
-- [ ] Index-based iteration
-- [ ] Element iteration using `:`
-- [ ] Reference iteration using `&`
-- [ ] Collection length support
-- [ ] Custom iterators
+- Index-based iteration
+- Element iteration using `:`
+- Reference iteration using `&`
+- Collection length support
+- Custom iterators
 
 **Advanced loops**
 
-- [ ] Floating-point ranges
-- [ ] Parallel loops
-- [ ] SIMD loops
-- [ ] Automatic loop vectorization
+- Floating-point ranges
+- Parallel loops
+- SIMD loops
+- Automatic loop vectorization
 
 **Loop compiler requirements**
 
-- [ ] Common internal loop representation
-- [ ] Consistent semantics between interpreter and native backend
-- [ ] Correct endpoint handling
-- [ ] Safe integer overflow behaviour
-- [ ] Correct nested-loop execution
-- [ ] Comprehensive loop tests
+- Common internal loop representation
+- Consistent semantics between interpreter and native backend
+- Correct endpoint handling
+- Safe integer overflow behaviour
+- Correct nested-loop execution
+- Comprehensive loop tests
 
 ### Memory management
 
-- [ ] Pointer support
-- [ ] Reference support
-- [ ] Address-of operator
-- [ ] Dereference operator
-- [ ] Ownership model
-- [ ] Borrowing model
-- [ ] Resource-aware types
-- [ ] Predictable resource lifetimes
-- [ ] Region-based memory management
-- [ ] Memory allocation strategies
-- [ ] Explicit resource management
-- [ ] No mandatory garbage collector
+- Pointer support
+- Reference support
+- Address-of operator
+- Dereference operator
+- Ownership model
+- Borrowing model
+- Resource-aware types
+- Predictable resource lifetimes
+- Region-based memory management
+- Memory allocation strategies
+- Explicit resource management
+- No mandatory garbage collector
 
 ### Compiler architecture
 
 **Core compiler**
 
-- [ ] Lexer
-- [ ] Parser
-- [ ] Abstract Syntax Tree (AST)
-- [ ] Semantic analysis
-- [ ] Symbol tables
-- [ ] Type checker
-- [ ] Intermediate Representation (IR)
-- [ ] Optimization passes
-- [ ] LLVM integration
-- [ ] Native machine-code generation
-- [ ] Platform-specific linking
+- Lexer
+- Parser
+- Abstract Syntax Tree (AST)
+- Semantic analysis
+- Symbol tables
+- Type checker
+- Intermediate Representation (IR)
+- Optimization passes
+- LLVM integration
+- Native machine-code generation
+- Platform-specific linking
 
 **Incremental compilation**
 
-- [ ] Dependency tracking
-- [ ] Source change detection
-- [ ] Selective recompilation
-- [ ] Incremental semantic analysis
-- [ ] Incremental type checking
-- [ ] Compilation caching
-- [ ] Dependency-aware cache invalidation
-- [ ] Parallel compilation
-- [ ] Incremental linking where supported
-- [ ] Reuse of valid intermediate results
-- [ ] Fast no-change rebuilds
+- Dependency tracking
+- Source change detection
+- Selective recompilation
+- Incremental semantic analysis
+- Incremental type checking
+- Compilation caching
+- Dependency-aware cache invalidation
+- Parallel compilation
+- Incremental linking where supported
+- Reuse of valid intermediate results
+- Fast no-change rebuilds
 
 **Compiler intelligence**
 
-- [ ] Static analysis
-- [ ] Useful compiler diagnostics
-- [ ] Actionable error messages
-- [ ] Performance recommendations
-- [ ] Dependency analysis
-- [ ] Optimization diagnostics
-- [ ] Profiling information
+- Static analysis
+- Useful compiler diagnostics
+- Actionable error messages
+- Performance recommendations
+- Dependency analysis
+- Optimization diagnostics
+- Profiling information
 
 ### Performance and hardware awareness
 
-- [ ] Native performance
-- [ ] SIMD support
-- [ ] Automatic vectorization
-- [ ] Hardware-specific optimization
-- [ ] Data-oriented programming
-- [ ] Cache-aware data layouts
-- [ ] Parallel execution
-- [ ] Efficient memory allocation
-- [ ] Low runtime overhead
-- [ ] Benchmarking infrastructure
-- [ ] Performance regression testing
+- Native performance
+- SIMD support
+- Automatic vectorization
+- Hardware-specific optimization
+- Data-oriented programming
+- Cache-aware data layouts
+- Parallel execution
+- Efficient memory allocation
+- Low runtime overhead
+- Benchmarking infrastructure
+- Performance regression testing
 
 ### Nine future research features
 
 These are research directions to investigate, not promises that every feature is novel or will necessarily be adopted.
 
-- [ ] **Adaptive memory allocation** — choose allocation strategies based on workload.
-- [ ] **Compile-time performance checks** — detect certain expensive operations before execution.
-- [ ] **Resource-aware types** — track memory, I/O, and blocking effects.
-- [ ] **Automatic SIMD specialization** — generate hardware-specific implementations.
-- [ ] **Adaptive task scheduler** — optimize parallel workload distribution.
-- [ ] **Incremental type checking** — avoid repeating unaffected semantic analysis.
-- [ ] **Deterministic concurrency** — make selected concurrent operations reproducible.
-- [ ] **Smart binary generation** — remove unnecessary runtime and library components.
-- [ ] **Hardware-aware data layouts** — optimize structures for cache and SIMD access.
+- **Adaptive memory allocation** — choose allocation strategies based on workload.
+- **Compile-time performance checks** — detect certain expensive operations before execution.
+- **Resource-aware types** — track memory, I/O, and blocking effects.
+- **Automatic SIMD specialization** — generate hardware-specific implementations.
+- **Adaptive task scheduler** — optimize parallel workload distribution.
+- **Incremental type checking** — avoid repeating unaffected semantic analysis.
+- **Deterministic concurrency** — make selected concurrent operations reproducible.
+- **Smart binary generation** — remove unnecessary runtime and library components.
+- **Hardware-aware data layouts** — optimize structures for cache and SIMD access.
 
 ### Concurrency and parallel computing
 
-- [ ] Thread support
-- [ ] Task-based concurrency
-- [ ] Thread pools
-- [ ] Task scheduling
-- [ ] Parallel loops
-- [ ] Synchronization primitives
-- [ ] Atomic operations
-- [ ] Race detection or analysis
-- [ ] Deterministic concurrency
-- [ ] Adaptive task scheduling
+- Thread support
+- Task-based concurrency
+- Thread pools
+- Task scheduling
+- Parallel loops
+- Synchronization primitives
+- Atomic operations
+- Race detection or analysis
+- Deterministic concurrency
+- Adaptive task scheduling
 
 ### Developer ecosystem
 
-- [ ] Standard library
-- [ ] Package manager
-- [ ] Module system
-- [ ] Import system
-- [ ] Build system
-- [ ] Compiler command-line interface
-- [ ] Debugging support
-- [ ] IDE integration
-- [ ] Language server
-- [ ] Formatter
-- [ ] Documentation tooling
-- [ ] Testing framework
-- [ ] Dependency management
+- Standard library
+- Package manager
+- Module system
+- Import system
+- Build system
+- Compiler command-line interface
+- Debugging support
+- IDE integration
+- Language server
+- Formatter
+- Documentation tooling
+- Testing framework
+- Dependency management
 
 ### Arask engine ecosystem
 
 The Arask ecosystem is intended to provide reusable, general-purpose engines and libraries that developers can use as building blocks.
 
 **Graphics engine**
-- [ ] Rendering
-- [ ] Shaders
-- [ ] Graphics resources
-- [ ] Visual applications
+- Rendering
+- Shaders
+- Graphics resources
+- Visual applications
 
 **Physics engine**
-- [ ] Collision detection
-- [ ] Rigid-body simulation
-- [ ] Physical interactions
+- Collision detection
+- Rigid-body simulation
+- Physical interactions
 
 **Networking engine**
-- [ ] Sockets
-- [ ] Protocols
-- [ ] Asynchronous communication
-- [ ] Network services
+- Sockets
+- Protocols
+- Asynchronous communication
+- Network services
 
 **Math engine**
-- [ ] Linear algebra
-- [ ] Numerical computing
-- [ ] Geometry
-- [ ] SIMD operations
+- Linear algebra
+- Numerical computing
+- Geometry
+- SIMD operations
 
 **Database engine**
-- [ ] Storage
-- [ ] Indexing
-- [ ] Data management
-- [ ] Query execution
+- Storage
+- Indexing
+- Data management
+- Query execution
 
 **AI/ML engine**
-- [ ] Tensor operations
-- [ ] Model execution
-- [ ] Machine-learning inference
+- Tensor operations
+- Model execution
+- Machine-learning inference
 
 **Audio engine**
-- [ ] Audio processing
-- [ ] Mixing
-- [ ] Playback
-- [ ] Real-time audio
+- Audio processing
+- Mixing
+- Playback
+- Real-time audio
 
 **Parallel computing engine**
-- [ ] Thread pools
-- [ ] Task scheduling
-- [ ] Parallel execution
+- Thread pools
+- Task scheduling
+- Parallel execution
 
 ### Cross-platform support
 
-- [ ] macOS ARM64
-- [ ] macOS x86-64
-- [ ] Windows x86-64
-- [ ] Windows ARM64
-- [ ] Linux x86-64
-- [ ] Linux ARM64
-- [ ] Platform-specific linker support
-- [ ] Target-specific system libraries
-- [ ] Cross-compilation support
+- macOS ARM64
+- macOS x86-64
+- Windows x86-64
+- Windows ARM64
+- Linux x86-64
+- Linux ARM64
+- Platform-specific linker support
+- Target-specific system libraries
+- Cross-compilation support
 
 ### Optional separate project: Vectra
 
 Vectra is an independent vector-search project. It is not a required Arask component or dependency.
 
-- [ ] Keep Vectra as a separate project
-- [ ] Explore optional Arask integration
-- [ ] Explore using Arask libraries in Vectra
-- [ ] Maintain independent development and functionality
+- Keep Vectra as a separate project
+- Explore optional Arask integration
+- Explore using Arask libraries in Vectra
+- Maintain independent development and functionality
 
 ### Quality, testing, and release
 
-- [ ] Lexer tests
-- [ ] Parser tests
-- [ ] AST tests
-- [ ] Type-checker tests
-- [ ] Interpreter tests
-- [ ] Loop tests
-- [ ] Compiler backend tests
-- [ ] Cross-platform tests
-- [ ] Standard library tests
-- [ ] Benchmark suite
-- [ ] Regression tests
-- [ ] Documentation
-- [ ] Versioning and releases
+- Lexer tests
+- Parser tests
+- AST tests
+- Type-checker tests
+- Interpreter tests
+- Loop tests
+- Compiler backend tests
+- Cross-platform tests
+- Standard library tests
+- Benchmark suite
+- Regression tests
+- Documentation
+- Versioning and releases
 
-### Immediate development priority
+### Immediate development focus
 
 The next development session is dedicated to completing the loop system before moving on to function implementation:
 
-- [ ] Range-loop parsing
-- [ ] Inclusive and exclusive endpoints
-- [ ] Ascending and descending ranges
-- [ ] Custom steps
-- [ ] Runtime bounds
-- [ ] Controlled loop updates
-- [ ] Nested loops
-- [ ] `break` and `continue`
-- [ ] Scoping and overflow behaviour
-- [ ] Collection iteration
-- [ ] Multiple updates and labeled loops
-- [ ] Tests for every supported form
+- Range-loop parsing
+- Inclusive and exclusive endpoints
+- Ascending and descending ranges
+- Custom steps
+- Runtime bounds
+- Controlled loop updates
+- Nested loops
+- `break` and `continue`
+- Scoping and overflow behaviour
+- Collection iteration
+- Multiple updates and labeled loops
+- Tests for every supported form
 
 A feature is considered complete only when its syntax is defined, its semantics are clear, it is implemented, and it has tests. A single successful example is not enough.
