@@ -1,6 +1,6 @@
 # Arask
 
-Arask is a general-purpose programming language project focused on native performance, predictable memory use, hardware-aware programming, and a straightforward developer experience.
+Arask is a high-performance programming language project focused on native performance, predictable memory use, hardware-aware programming, and a straightforward developer experience.
 
 The goal is to combine readable syntax with low-level control, while building a compiler and ecosystem suitable for systems software, applications, tools, networking, graphics, and performance-sensitive workloads.
 
