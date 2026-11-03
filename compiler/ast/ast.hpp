@@ -1,8 +1,8 @@
-
 #pragma once
 
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace newlang {
 
@@ -24,7 +24,6 @@ struct VariableExpr : Expr {
         : name(std::move(name)) {}
 };
 
-// Represents an operation, e.g. age + 5
 struct BinaryExpr : Expr {
     std::unique_ptr<Expr> left;
     std::string op;
@@ -56,12 +55,23 @@ struct VariableDeclaration : Stmt {
           initializer(std::move(initializer)) {}
 };
 
-// Represents: print(age + 5);
-struct PrintStatement : Stmt {
+struct CoutStatement : Stmt {
     std::unique_ptr<Expr> expression;
 
-    explicit PrintStatement(std::unique_ptr<Expr> expression)
+    explicit CoutStatement(std::unique_ptr<Expr> expression)
         : expression(std::move(expression)) {}
+};
+
+struct UnaryExpr : Expr {
+    std::string op;
+    std::unique_ptr<Expr> right;
+
+    UnaryExpr(
+        std::string op,
+        std::unique_ptr<Expr> right
+    )
+        : op(std::move(op)),
+          right(std::move(right)) {}
 };
 
 }

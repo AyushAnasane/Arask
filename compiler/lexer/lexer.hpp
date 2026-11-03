@@ -4,15 +4,13 @@
 #include <string>
 #include <vector>
 #include "newlang/token.hpp"
-using namespace std;
 
 namespace newlang {
 
 class Lexer {
 private:
-    string source;
-
-    vector<Token> tokens;
+    std::string source;
+    std::vector<Token> tokens;
 
     int start = 0;
     int current = 0;
@@ -33,9 +31,9 @@ private:
     void number();
 
 public:
-    explicit Lexer(const string& sourceCode);
+    explicit Lexer(const std::string& sourceCode);
 
-    vector<Token> scanTokens();
+    std::vector<Token> scanTokens();
 };
 
 }

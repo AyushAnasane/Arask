@@ -6,23 +6,48 @@
 namespace newlang {
 
 enum class TokenType {
+
     Let,
-    Print,
+    Const,
+    Cout,
+    Fn,
+    Struct,
+    If,
+    Else,
+    For,
+    Return,
+    True,
+    False,
 
     Identifier,
     Number,
+    String,
 
     Plus,
+    PlusPlus,
     Minus,
     Star,
     Slash,
 
     Equal,
     EqualEqual,
+    BangEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
 
+    Colon,
+    Comma,
+    Dot,
+    Semicolon,
     LeftParen,
     RightParen,
-    Semicolon,
+    LeftBrace,
+    RightBrace,
+
+    Ampersand,
+    Arrow,
 
     EndOfFile,
     Unknown

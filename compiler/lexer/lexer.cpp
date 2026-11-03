@@ -1,6 +1,7 @@
 
 #include "lexer.hpp"
 #include <cctype>
+#include <unordered_map>
 
 using namespace std;
 
@@ -43,20 +44,31 @@ void Lexer::addToken(TokenType type) {
 }
 
 void Lexer::identifier() {
-    while (isalnum(
-        static_cast<unsigned char>(peek())) || peek() == '_') {
+    while (std::isalnum(peek()) || peek() == '_') {
         advance();
     }
 
-    string text = source.substr(start, current - start);
+    std::string text = source.substr(start, current - start);
 
-    if (text == "let") {
-        addToken(TokenType::Let);
-    }
-    else if (text == "print") {
-        addToken(TokenType::Print);
-    }
-    else {
+    static const std::unordered_map<std::string, TokenType> keywords = {
+        {"let", TokenType::Let},
+        {"const", TokenType::Const},
+        {"cout", TokenType::Cout},
+        {"if", TokenType::If},
+        {"else", TokenType::Else},
+        {"for", TokenType::For},
+        {"struct", TokenType::Struct},
+        {"fn", TokenType::Fn},
+        {"return", TokenType::Return},
+        {"true", TokenType::True},
+        {"false", TokenType::False}
+    };
+
+    auto it = keywords.find(text);
+
+    if (it != keywords.end()) {
+        addToken(it->second);
+    } else {
         addToken(TokenType::Identifier);
     }
 }
@@ -70,8 +82,8 @@ void Lexer::number() {
     addToken(TokenType::Number);
 }
 
-void Lexer::scanToken() {
 
+void Lexer::scanToken() {
     char c = advance();
 
     switch (c) {
@@ -79,15 +91,37 @@ void Lexer::scanToken() {
             break;
 
         case '\n':
-        break;
+            break;
 
-        case '+': addToken(TokenType::Plus); break;
-        case '-': addToken(TokenType::Minus); break;
+        case '+':
+        if (peek() == '+') {
+            advance();
+            addToken(TokenType::PlusPlus);
+        } else {
+            addToken(TokenType::Plus);
+        }
+        break;
         case '*': addToken(TokenType::Star); break;
         case '/': addToken(TokenType::Slash); break;
+
+        case '-':
+            if (peek() == '>') {
+                advance();
+                addToken(TokenType::Arrow);
+            } else {
+                addToken(TokenType::Minus);
+            }
+            break;
+
         case '(': addToken(TokenType::LeftParen); break;
         case ')': addToken(TokenType::RightParen); break;
+        case '{': addToken(TokenType::LeftBrace); break;
+        case '}': addToken(TokenType::RightBrace); break;
+
         case ';': addToken(TokenType::Semicolon); break;
+        case ':': addToken(TokenType::Colon); break;
+        case ',': addToken(TokenType::Comma); break;
+        case '.': addToken(TokenType::Dot); break;
 
         case '=':
             if (peek() == '=') {
@@ -98,11 +132,42 @@ void Lexer::scanToken() {
             }
             break;
 
+        case '!':
+            if (peek() == '=') {
+                advance();
+                addToken(TokenType::BangEqual);
+            } else {
+                addToken(TokenType::Unknown);
+            }
+            break;
+
+        case '>':
+            if (peek() == '=') {
+                advance();
+                addToken(TokenType::GreaterEqual);
+            } else {
+                addToken(TokenType::Greater);
+            }
+            break;
+
+        case '<':
+            if (peek() == '=') {
+                advance();
+                addToken(TokenType::LessEqual);
+            } else {
+                addToken(TokenType::Less);
+            }
+            break;
+
+        case '&':
+            addToken(TokenType::Ampersand);
+            break;
+
         default:
-            if (isdigit(static_cast<unsigned char>(c))) {
+            if (std::isdigit(static_cast<unsigned char>(c))) {
                 number();
             }
-            else if (isalpha(static_cast<unsigned char>(c)) || c == '_') {
+            else if (std::isalpha(static_cast<unsigned char>(c)) || c == '_') {
                 identifier();
             }
             else {
@@ -111,6 +176,7 @@ void Lexer::scanToken() {
             break;
     }
 }
+
 
 vector<Token> Lexer::scanTokens() {
 
