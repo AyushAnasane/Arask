@@ -1,8 +1,10 @@
+
 #pragma once
 
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace newlang {
 
@@ -39,6 +41,18 @@ struct BinaryExpr : Expr {
           right(std::move(right)) {}
 };
 
+struct UnaryExpr : Expr {
+    std::string op;
+    std::unique_ptr<Expr> right;
+
+    UnaryExpr(
+        std::string op,
+        std::unique_ptr<Expr> right
+    )
+        : op(std::move(op)),
+          right(std::move(right)) {}
+};
+
 struct Stmt {
     virtual ~Stmt() = default;
 };
@@ -55,6 +69,25 @@ struct VariableDeclaration : Stmt {
           initializer(std::move(initializer)) {}
 };
 
+struct AssignmentStatement : Stmt {
+    std::string name;
+    std::unique_ptr<Expr> value;
+
+    AssignmentStatement(
+        std::string name,
+        std::unique_ptr<Expr> value
+    )
+        : name(std::move(name)),
+          value(std::move(value)) {}
+};
+
+struct IncrementStatement : Stmt {
+    std::string name;
+
+    explicit IncrementStatement(std::string name)
+        : name(std::move(name)) {}
+};
+
 struct CoutStatement : Stmt {
     std::unique_ptr<Expr> expression;
 
@@ -62,16 +95,44 @@ struct CoutStatement : Stmt {
         : expression(std::move(expression)) {}
 };
 
-struct UnaryExpr : Expr {
-    std::string op;
-    std::unique_ptr<Expr> right;
+struct BlockStatement : Stmt {
+    std::vector<std::unique_ptr<Stmt>> statements;
 
-    UnaryExpr(
-        std::string op,
-        std::unique_ptr<Expr> right
+    explicit BlockStatement(std::vector<std::unique_ptr<Stmt>> statements)
+        : statements(std::move(statements)) {}
+};
+
+struct IfStatement : Stmt {
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> thenBranch;
+    std::unique_ptr<Stmt> elseBranch;
+
+    IfStatement(
+        std::unique_ptr<Expr> condition,
+        std::unique_ptr<Stmt> thenBranch,
+        std::unique_ptr<Stmt> elseBranch
     )
-        : op(std::move(op)),
-          right(std::move(right)) {}
+        : condition(std::move(condition)),
+          thenBranch(std::move(thenBranch)),
+          elseBranch(std::move(elseBranch)) {}
+};
+
+struct ForStatement : Stmt {
+    std::unique_ptr<Stmt> initializer;
+    std::unique_ptr<Expr> condition;
+    std::unique_ptr<Stmt> increment;
+    std::unique_ptr<Stmt> body;
+
+    ForStatement(
+        std::unique_ptr<Stmt> initializer,
+        std::unique_ptr<Expr> condition,
+        std::unique_ptr<Stmt> increment,
+        std::unique_ptr<Stmt> body
+    )
+        : initializer(std::move(initializer)),
+          condition(std::move(condition)),
+          increment(std::move(increment)),
+          body(std::move(body)) {}
 };
 
 }

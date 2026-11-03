@@ -43,6 +43,12 @@ int Interpreter::evaluate(const Expr& expression) {
 
             return left / right;
         }
+        if (binary->op == "==") return left == right;
+        if (binary->op == "!=") return left != right;
+        if (binary->op == "<") return left < right;
+        if (binary->op == "<=") return left <= right;
+        if (binary->op == ">") return left > right;
+        if (binary->op == ">=") return left >= right;
     }
 
     throw std::runtime_error("Unsupported expression.");
@@ -60,6 +66,27 @@ void Interpreter::execute(const Stmt& statement) {
         return;
     }
 
+    if (const auto* assignment = dynamic_cast<const AssignmentStatement*>(&statement)) {
+        if (environment.find(assignment->name) == environment.end()) {
+            throw std::runtime_error("Undefined variable: " + assignment->name);
+        }
+
+        int value = evaluate(*assignment->value);
+        environment[assignment->name] = value;
+        return;
+    }
+
+    if (const auto* increment = dynamic_cast<const IncrementStatement*>(&statement)) {
+        auto it = environment.find(increment->name);
+
+        if (it == environment.end()) {
+            throw std::runtime_error("Undefined variable: " + increment->name);
+        }
+
+        it->second++;
+        return;
+    }
+
     if (const auto* output = dynamic_cast<const CoutStatement*>(&statement)) {
         int value = evaluate(*output->expression);
 
@@ -67,6 +94,38 @@ void Interpreter::execute(const Stmt& statement) {
 
         return;
     }
+
+    if (const auto* block = dynamic_cast<const BlockStatement*>(&statement)) {
+        for (const auto& child : block->statements) {
+            execute(*child);
+        }
+        return;
+    }
+
+    if (const auto* ifStmt = dynamic_cast<const IfStatement*>(&statement)) {
+        int condition = evaluate(*ifStmt->condition);
+
+        if (condition != 0) {
+            execute(*ifStmt->thenBranch);
+        }
+        else if (ifStmt->elseBranch) {
+            execute(*ifStmt->elseBranch);
+        }
+        return;
+    }
+
+    if (const auto* forStmt = dynamic_cast<const ForStatement*>(&statement)) {
+    if (forStmt->initializer) {
+        execute(*forStmt->initializer);
+    }
+
+    while (evaluate(*forStmt->condition) != 0) {
+        execute(*forStmt->body);
+        execute(*forStmt->increment);
+    }
+
+    return;
+}
 
     throw std::runtime_error("Unsupported statement.");
 }

@@ -1,164 +1,205 @@
 # Arask
 
-**A cross-platform, high-performance programming language and compiler ecosystem.**
+Arask is a general-purpose programming language project focused on native performance, predictable memory use, hardware-aware programming, and a straightforward developer experience.
 
-Arask is an experimental general-purpose programming language project focused on native performance, predictable memory management, fast compilation, and an excellent developer experience.
+The goal is to combine readable syntax with low-level control, while building a compiler and ecosystem suitable for systems software, applications, tools, networking, graphics, and performance-sensitive workloads.
 
-The long-term goal is to build a modern systems programming language with a powerful compiler architecture and a reusable ecosystem.
+## Design goals
 
-> **Status:** Early development — currently includes a lexer, arithmetic expression parser, and a basic tree-walking interpreter.
+- **Native performance:** compile programs to native machine code.
+- **Predictable memory:** provide clear control over memory, references, and resource lifetimes.
+- **Hardware-aware programming:** make SIMD, parallel execution, and data-oriented programming accessible.
+- **Fast development:** aim for efficient compilation, useful diagnostics, and practical tooling.
+- **Cross-platform support:** target macOS, Windows, and Linux.
+- **A reusable ecosystem:** support libraries and engines for common areas of software development.
 
-## Vision
+## Language overview
 
-Arask aims to bring together five core engineering goals:
+Arask uses a C-like structure with its own syntax for declarations, functions, conditions, loops, and output.
 
-- **Fast compilation:** Incremental compilation, dependency tracking, and parallel builds.
-- **Predictable memory:** Explore ownership, borrowing, and efficient memory management without mandatory garbage collection.
-- **Hardware-aware execution:** SIMD optimization, parallel execution, and data-oriented programming.
-- **Developer experience:** Clear diagnostics, useful tooling, and a streamlined development workflow.
-- **Native performance:** Optimized native machine code with minimal runtime overhead.
+```arask
+fn main() {
+    let total = 0;
 
-These are long-term design goals, not claims of currently implemented capabilities.
+    for (let i = 1, =5) {
+        total += i;
+    }
 
-## Current Features
+    if (total > 10) {
+        cout("The total is greater than 10");
+    } else {
+        cout("The total is 10 or less");
+    }
 
-| Component | Status |
-|---|---|
-| Lexer and tokenization | Implemented |
-| Parser and AST | Early implementation |
-| Arithmetic expressions | Implemented |
-| Operator precedence | Implemented |
-| Unary `+` and `-` | Implemented |
-| Integer variables | Basic implementation |
-| Variable lookup | Implemented |
-| Sequential statement execution | Implemented |
-| `cout()` output | Implemented |
-| `.ara` file execution | Implemented |
-| Automated tests | Implemented |
-| Semantic analysis | Planned |
-| LLVM integration | Planned |
-| Native code generation | Planned |
-| Incremental compilation | Planned |
-| Parallel compilation | Planned |
-
-## Example
-
-An early Arask program:
-
-```rust
-let a = 10;
-let b = 20;
-let result = a + b;
-
-cout(result);
+    cout(total);
+}
 ```
 
-Output:
+### Variables and constants
 
-```text
-30
+```arask
+let count = 10;
+let age: i32 = 19;
+
+const limit = 100;
 ```
 
-## Project Structure
+`let` declares a mutable variable. `const` declares an immutable binding. Types can be inferred or written explicitly.
 
-```text
-Arask/
-├── compiler/
-│   ├── ast/
-│   ├── interpreter/
-│   ├── lexer/
-│   ├── parser/
-│   ├── semantic/
-│   └── main.cpp
-├── examples/
-│   └── hello.ara
-├── include/
-│   └── newlang/
-├── tests/
-│   ├── parser/
-│   ├── lexer_tests.cpp
-│   └── interpreter_tests.cpp
-├── docs/
-├── CMakeLists.txt
-└── README.md
+### Functions
+
+```arask
+fn add(a: i32, b: i32) -> i32 {
+    return a + b;
+}
+
+fn main() {
+    cout(add(10, 20));
+}
 ```
 
-## Building from Source
+### Structs
 
-### Requirements
+```arask
+struct Point {
+    x: i32,
+    y: i32,
+}
 
-- C++20 compatible compiler
+fn main() {
+    let origin = Point { x: 0, y: 0 };
+    cout(origin.x);
+}
+```
+
+### Conditions
+
+```arask
+if (score >= 50) {
+    cout("Pass");
+} else {
+    cout("Retry");
+}
+```
+
+### Loops
+
+Arask's language design includes compact range loops and traditional controlled loops.
+
+```arask
+for (let i = 0, 5) {
+    cout(i);
+}
+
+for (let i = 0; =5) {
+    cout(i);
+}
+
+for (let i = 1; i < 100; i = i * 2) {
+    cout(i);
+}
+```
+
+The comma-based range forms are part of the language design. The current prototype does not yet implement every form shown in the full syntax specification.
+
+### Operators
+
+Arithmetic: `+`, `-`, `*`, `/`, `%`
+
+Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
+
+Compound assignment: `+=`, `-=`, `*=`, `/=`, `%=`
+
+Increment and decrement: `++`, `--`
+
+The complete syntax design also describes logical, bitwise, pointer, reference, collection, and advanced loop constructs.
+
+## Engine and library ecosystem
+
+A major part of Arask's direction is a collection of reusable, general-purpose libraries and engines. The aim is to give developers ready-to-use building blocks for common and technically demanding areas of software development.
+
+- **Graphics engine:** rendering, shaders, graphics resources, and visual applications.
+- **Physics engine:** collision detection, simulation, and physical interactions.
+- **Networking engine:** sockets, protocols, asynchronous communication, and network services.
+- **Math engine:** linear algebra, numerical methods, geometry, and SIMD operations.
+- **Database engine:** storage, indexing, data management, and query execution.
+- **AI/ML engine:** tensor operations, model execution, and machine-learning inference.
+- **Audio engine:** audio processing, mixing, playback, and real-time workloads.
+- **Parallel computing engine:** thread pools, task scheduling, and parallel execution.
+
+These are intended to be reusable libraries and engines in the Arask ecosystem, not a claim that every engine is already implemented.
+
+## Vectra (optional separate project)
+
+Vectra is a separate vector-search project. It is not the purpose of Arask and is not required by the language. If Arask and its ecosystem mature, Vectra may optionally use Arask or integrate with its libraries and tooling.
+
+## Compiler architecture
+
+Arask is being developed in C++20 with CMake. The compiler architecture is organized around separate components:
+
+- **Lexer:** converts source text into tokens.
+- **Parser:** converts tokens into an abstract syntax tree.
+- **AST:** represents expressions and statements.
+- **Interpreter:** executes the currently supported subset of the language.
+- **Native-code backend:** LLVM is the intended backend for generating optimized native machine code.
+
+The long-term compiler design includes an intermediate representation, optimization passes, static analysis, and target-specific code generation.
+
+## Current prototype
+
+The current prototype contains an initial lexer, parser, AST, and interpreter. The supported subset includes basic integer expressions, variables, assignment, output through `cout`, comparisons, `if`/`else`, and basic `for` loops.
+
+The full language design is broader than the current prototype. Features such as the complete type system, functions, structs, arrays, strings, memory-safety rules, all range-loop forms, LLVM code generation, and the package ecosystem are not represented as fully implemented compiler features yet.
+
+## Build
+
+Requirements:
+
+- C++20 compiler
 - CMake 3.20 or newer
-- Git
 
-### Build
-
-Clone the repository:
-
-```bash
-git clone https://github.com/AyushAnasane/Arask.git
-cd Arask
-```
-
-Configure and build:
+From the project root:
 
 ```bash
 cmake -S . -B build
 cmake --build build
 ```
 
-### Run an Arask program
-
-```bash
-./build/newlang examples/hello.ara
-```
-
-## Running Tests
-
-Run the automated test suite:
+Run the test suite:
 
 ```bash
 ctest --test-dir build --output-on-failure
 ```
 
-The current test suites cover lexer, parser, and interpreter functionality.
+Run a source file with the current executable:
 
-## Cross-Platform Direction
+```bash
+./build/newlang examples/hello.ara
+```
 
-Arask is being designed with cross-platform compilation in mind.
+The executable and internal CMake target names may change as the project is renamed and developed.
 
-Planned targets:
+## Example source file
 
-- macOS — Apple Silicon and Intel
-- Windows — x86-64 and ARM64
-- Linux — x86-64 and ARM64
+Create a file named `hello.ara`:
 
-LLVM is being considered as the eventual native code-generation backend.
+```arask
+let a = 10;
+let b = 20;
 
-Cross-platform native compilation is a design goal and is not implemented yet.
+cout(a + b);
+```
 
-## Development Roadmap
+Run it:
 
-1. Complete the language grammar and core syntax.
-2. Expand expression and statement support.
-3. Implement semantic analysis and type checking.
-4. Design a compiler intermediate representation.
-5. Integrate LLVM for native code generation.
-6. Develop incremental and parallel compilation.
-7. Explore advanced memory and hardware-aware optimizations.
-8. Build a standard library and developer tooling ecosystem.
+```bash
+./build/newlang hello.ara
+```
 
-## Philosophy
+## Project documentation
 
-Arask is being developed around a few principles:
+See **Arask Project & Syntax** for the broader language design, including types, operators, pointers, references, control flow, loop forms, modules, compiler direction, and ecosystem concepts.
 
-- Modular compiler architecture.
-- Stable language semantics.
-- Benchmark-driven optimization.
-- Clear and actionable compiler diagnostics.
-- Experimental features backed by testing.
-- Cross-platform design from the beginning.
+## Project direction
 
-## License
-
-License to be determined.
+Arask aims to grow into a modular, cross-platform language and compiler. Its design emphasizes measurable performance, clear semantics, useful tooling, and a library ecosystem. Performance claims will need to be demonstrated with reproducible benchmarks against relevant alternatives.

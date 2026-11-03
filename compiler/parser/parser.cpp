@@ -79,6 +79,47 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
     return statements;
 }
 
+std::unique_ptr<Stmt> Parser::assignmentStatement() {
+    std::string name = consume(
+        TokenType::Identifier,
+        "Expected variable name."
+    ).lexeme;
+
+    consume(TokenType::Equal, "Expected '='.");
+
+    auto value = expression();
+
+    consume(TokenType::Semicolon, "Expected ';' after assignment.");
+
+    return std::make_unique<AssignmentStatement>(
+        name,
+        std::move(value)
+    );
+}
+
+std::unique_ptr<Stmt> Parser::incrementStatement() {
+    std::string name = consume(
+        TokenType::Identifier,
+        "Expected variable name."
+    ).lexeme;
+
+    consume(TokenType::PlusPlus, "Expected '++'.");
+    consume(TokenType::Semicolon, "Expected ';' after increment.");
+
+    return std::make_unique<IncrementStatement>(name);
+}
+
+std::unique_ptr<Stmt> Parser::incrementExpression() {
+    std::string name = consume(
+        TokenType::Identifier,
+        "Expected variable name."
+    ).lexeme;
+
+    consume(TokenType::PlusPlus, "Expected '++'.");
+
+    return std::make_unique<IncrementStatement>(name);
+}
+
 std::unique_ptr<Stmt> Parser::statement() {
     if (match(TokenType::Let)) {
         return variableDeclaration();
@@ -88,9 +129,117 @@ std::unique_ptr<Stmt> Parser::statement() {
         return coutStatement();
     }
 
+    if (match(TokenType::For)) {
+        return forStatement();
+    }
+
+    if (match(TokenType::If)) {
+        return ifStatement();
+    }
+
+    if (match(TokenType::LeftBrace)) {
+        return blockStatement();
+    }
+
+    if (check(TokenType::Identifier) &&
+        current + 1 < tokens.size() &&
+        tokens[current + 1].type == TokenType::PlusPlus) {
+        return incrementStatement();
+    }
+
+    if (check(TokenType::Identifier) &&
+        current + 1 < tokens.size() &&
+        tokens[current + 1].type == TokenType::Equal) {
+        return assignmentStatement();
+    }
+
     throw std::runtime_error(
         "Unexpected token at line " +
         std::to_string(peek().line)
+    );
+}
+
+std::unique_ptr<Stmt> Parser::blockStatement() {
+    std::vector<std::unique_ptr<Stmt>> statements;
+
+    while (!check(TokenType::RightBrace) && !isAtEnd()) {
+        statements.push_back(statement());
+    }
+
+    consume(
+        TokenType::RightBrace,
+        "Expected '}' after block."
+    );
+
+    return std::make_unique<BlockStatement>(
+        std::move(statements)
+    );
+}
+
+std::unique_ptr<Stmt> Parser::ifStatement() {
+    consume(
+        TokenType::LeftParen,
+        "Expected '(' after if."
+    );
+
+    auto condition = expression();
+
+    consume(
+        TokenType::RightParen,
+        "Expected ')' after condition."
+    );
+
+    consume(
+        TokenType::LeftBrace,
+        "Expected '{' before if body."
+    );
+
+    auto thenBranch = blockStatement();
+
+    std::unique_ptr<Stmt> elseBranch = nullptr;
+
+    if (match(TokenType::Else)) {
+        consume(
+            TokenType::LeftBrace,
+            "Expected '{' before else body."
+        );
+
+        elseBranch = blockStatement();
+    }
+
+    return std::make_unique<IfStatement>(
+        std::move(condition),
+        std::move(thenBranch),
+        std::move(elseBranch)
+    );
+}
+
+std::unique_ptr<Stmt> Parser::forStatement() {
+    consume(TokenType::LeftParen, "Expected '(' after for.");
+
+    std::unique_ptr<Stmt> initializer;
+
+    if (match(TokenType::Let)) {
+        initializer = variableDeclaration();
+    }
+
+    auto condition = expression();
+
+    consume(TokenType::Semicolon, "Expected ';' after loop condition.");
+
+    auto increment = incrementExpression();
+
+    consume(TokenType::RightParen, "Expected ')' after for clauses.");
+
+    consume(TokenType::LeftBrace, "Expected '{' before loop body.");
+
+    auto body = blockStatement();
+
+    return std::make_unique<ForStatement>(
+        std::move(initializer),
+        std::move(condition),
+        std::move(increment),
+        std::move(body)
     );
 }
 
@@ -142,7 +291,48 @@ std::unique_ptr<Stmt> Parser::coutStatement() {
 }
 
 std::unique_ptr<Expr> Parser::expression() {
-    return term();
+    return equality();
+}
+
+
+std::unique_ptr<Expr> Parser::equality() {
+    auto expr = comparison();
+
+    while (match(TokenType::EqualEqual) ||
+           match(TokenType::BangEqual)) {
+
+        std::string op = previous().lexeme;
+        auto right = comparison();
+
+        expr = std::make_unique<BinaryExpr>(
+            std::move(expr),
+            op,
+            std::move(right)
+        );
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::comparison() {
+    auto expr = term();
+
+    while (match(TokenType::Greater) ||
+           match(TokenType::GreaterEqual) ||
+           match(TokenType::Less) ||
+           match(TokenType::LessEqual)) {
+
+        std::string op = previous().lexeme;
+        auto right = term();
+
+        expr = std::make_unique<BinaryExpr>(
+            std::move(expr),
+            op,
+            std::move(right)
+        );
+    }
+
+    return expr;
 }
 
 std::unique_ptr<Expr> Parser::term() {

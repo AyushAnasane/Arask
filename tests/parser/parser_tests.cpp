@@ -202,7 +202,83 @@ int main() {
     assert(parenthesesSecond->value == 5);
     assert(parenthesesThird->value == 2);
 
-    std::cout << "All parser tests passed!\n";
+    {
+    std::string associativitySource = "let result = 20 - 5 - 3;";
 
-    return 0;
+    Lexer associativityLexer(associativitySource);
+    auto associativityTokens = associativityLexer.scanTokens();
+
+    Parser associativityParser(associativityTokens);
+    auto associativityStatements = associativityParser.parse();
+
+    assert(associativityStatements.size() == 1);
+
+    auto* associativityDeclaration =
+        dynamic_cast<VariableDeclaration*>(associativityStatements[0].get());
+
+    assert(associativityDeclaration != nullptr);
+    assert(associativityDeclaration->name == "result");
+
+    auto* outerSubtraction =
+        dynamic_cast<BinaryExpr*>(associativityDeclaration->initializer.get());
+
+    assert(outerSubtraction != nullptr);
+    assert(outerSubtraction->op == "-");
+
+    auto* innerSubtraction =
+        dynamic_cast<BinaryExpr*>(outerSubtraction->left.get());
+
+    assert(innerSubtraction != nullptr);
+    assert(innerSubtraction->op == "-");
+
+    auto* firstNumber =
+        dynamic_cast<NumberExpr*>(innerSubtraction->left.get());
+
+    auto* secondNumber =
+        dynamic_cast<NumberExpr*>(innerSubtraction->right.get());
+
+    auto* thirdNumber =
+        dynamic_cast<NumberExpr*>(outerSubtraction->right.get());
+
+    assert(firstNumber != nullptr);
+    assert(secondNumber != nullptr);
+    assert(thirdNumber != nullptr);
+
+    assert(firstNumber->value == 20);
+    assert(secondNumber->value == 5);
+    assert(thirdNumber->value == 3);
+    }
+    
+    {
+    std::string comparisonSource = "let result = 10 + 5 <= 15;";
+
+    Lexer comparisonLexer(comparisonSource);
+    auto comparisonTokens = comparisonLexer.scanTokens();
+
+    Parser comparisonParser(comparisonTokens);
+    auto comparisonStatements = comparisonParser.parse();
+
+    assert(comparisonStatements.size() == 1);
+
+    auto* declaration =
+        dynamic_cast<VariableDeclaration*>(comparisonStatements[0].get());
+
+    assert(declaration != nullptr);
+
+    auto* comparison =
+        dynamic_cast<BinaryExpr*>(declaration->initializer.get());
+
+    assert(comparison != nullptr);
+    assert(comparison->op == "<=");
+
+    auto* addition =
+        dynamic_cast<BinaryExpr*>(comparison->left.get());
+
+    assert(addition != nullptr);
+    assert(addition->op == "+");
+}
+
+std::cout << "All parser tests passed!\n";
+
+return 0;
 }
