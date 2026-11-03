@@ -23,6 +23,17 @@ add_library(arask_parser
     compiler/parser/parser.cpp
 )
 
+add_library(arask_interpreter
+    compiler/interpreter/interpreter.cpp
+)
+
+target_include_directories(arask_interpreter PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/compiler
+)
+
+target_link_libraries(arask_interpreter PUBLIC arask_parser)
+
 target_include_directories(arask_parser PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/compiler
@@ -34,7 +45,7 @@ add_executable(newlang
     compiler/main.cpp
 )
 
-target_link_libraries(newlang PRIVATE arask_parser)
+target_link_libraries(newlang PRIVATE arask_interpreter)
 
 enable_testing()
 
@@ -51,6 +62,17 @@ add_test(
 
 add_executable(parser_tests
     tests/parser/parser_tests.cpp
+)
+
+add_executable(interpreter_tests
+    tests/interpreter_tests.cpp
+)
+
+target_link_libraries(interpreter_tests PRIVATE arask_interpreter)
+
+add_test(
+    NAME InterpreterTests
+    COMMAND interpreter_tests
 )
 
 target_link_libraries(parser_tests PRIVATE arask_parser)
