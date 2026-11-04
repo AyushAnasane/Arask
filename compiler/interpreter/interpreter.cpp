@@ -70,10 +70,15 @@ void Interpreter::execute(const Stmt& statement) {
             throw std::runtime_error("Undefined function: " + call->name);
         }
 
-        if (!function->second->parameters.empty()) {
-            throw std::runtime_error(
-                "Function parameters are not supported yet: " + call->name
-            );
+        if (call->arguments.size() != function->second->parameters.size()) {
+            throw std::runtime_error("Wrong number of arguments for function: " + call->name);
+        }
+
+        for (std::size_t i = 0; i < call->arguments.size(); ++i) {
+            const std::string& parameterName =
+                function->second->parameters[i].name;
+
+            environment[parameterName] = evaluate(*call->arguments[i]);
         }
 
         execute(*function->second->body);

@@ -105,9 +105,14 @@ struct CoutStatement : Stmt {
 
 struct FunctionCallStatement : Stmt {
     std::string name;
+    std::vector<std::unique_ptr<Expr>> arguments;
 
-    explicit FunctionCallStatement(std::string name)
-        : name(std::move(name)) {}
+    FunctionCallStatement(
+        std::string name,
+        std::vector<std::unique_ptr<Expr>> arguments
+    )
+        : name(std::move(name)),
+          arguments(std::move(arguments)) {}
 };
 
 struct BlockStatement : Stmt {

@@ -417,6 +417,37 @@ int main() {
 
     assert(call != nullptr);
     assert(call->name == "greet");
+    assert(call->arguments.empty());
+}
+
+{
+    std::string callSource =
+        "fn main() { printScore(42); }";
+
+    Lexer callLexer(callSource);
+    auto callTokens = callLexer.scanTokens();
+
+    Parser callParser(callTokens);
+    auto callStatements = callParser.parse();
+
+    auto* mainFunction = dynamic_cast<FunctionDeclaration*>(
+        callStatements[0].get()
+    );
+
+    assert(mainFunction != nullptr);
+    assert(mainFunction->body->statements.size() == 1);
+
+    auto* call = dynamic_cast<FunctionCallStatement*>(
+        mainFunction->body->statements[0].get()
+    );
+
+    assert(call != nullptr);
+    assert(call->name == "printScore");
+    assert(call->arguments.size() == 1);
+
+    auto* argument = dynamic_cast<NumberExpr*>(call->arguments[0].get());
+    assert(argument != nullptr);
+    assert(argument->value == 42);
 }
 
 std::cout << "All parser tests passed!\n";

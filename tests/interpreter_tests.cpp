@@ -134,7 +134,19 @@ int main() {
 
         assert(output == "100\n1\n");
     }
+    {
+        std::string output = runProgram(
+            "fn printScore(score: i32) {"
+            "cout(score);"
+            "}"
+            "fn main() {"
+            "printScore(42);"
+            "}"
+        );
 
+        assert(output=="42\n");
+
+    }
     std::cout << "All interpreter tests passed!\n";
 
     return 0;

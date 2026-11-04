@@ -91,10 +91,22 @@ std::unique_ptr<Stmt> Parser::functionCallStatement() {
     ).lexeme;
 
     consume(TokenType::LeftParen, "Expected '(' after function name.");
-    consume(TokenType::RightParen, "Function arguments are not supported yet.");
+
+    std::vector<std::unique_ptr<Expr>> arguments;
+
+    if (!check(TokenType::RightParen)) {
+        do {
+            arguments.push_back(expression());
+        } while (match(TokenType::Comma));
+    }
+
+    consume(TokenType::RightParen, "Expected ')' after function arguments.");
     consume(TokenType::Semicolon, "Expected ';' after function call.");
 
-    return std::make_unique<FunctionCallStatement>(std::move(name));
+    return std::make_unique<FunctionCallStatement>(
+        std::move(name),
+        std::move(arguments)
+    );
 }
 
 std::unique_ptr<Stmt> Parser::functionDeclaration() {
