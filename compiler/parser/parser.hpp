@@ -36,6 +36,8 @@ private:
         std::unique_ptr<Expr> start
     );
     std::unique_ptr<Stmt> incrementExpression();
+    std::unique_ptr<Stmt> decrementStatement();
+    std::unique_ptr<Stmt> updateExpression();
 
     std::unique_ptr<Expr> expression();
     std::unique_ptr<Expr> equality();

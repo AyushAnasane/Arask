@@ -88,6 +88,11 @@ void Interpreter::execute(const Stmt& statement) {
         return;
     }
 
+    if (const auto* decrement = dynamic_cast<const DecrementStatement*>(&statement)) {
+        environment[decrement->name]--;
+        return;
+    }
+
     if (const auto* output = dynamic_cast<const CoutStatement*>(&statement)) {
         int value = evaluate(*output->expression);
 
@@ -116,13 +121,16 @@ void Interpreter::execute(const Stmt& statement) {
     }
 
     if (const auto* forStmt = dynamic_cast<const ForStatement*>(&statement)) {
-    if (forStmt->initializer) {
-        execute(*forStmt->initializer);
+    for (const auto& initializer : forStmt->initializers) {
+        execute(*initializer);
     }
 
     while (evaluate(*forStmt->condition) != 0) {
         execute(*forStmt->body);
-        execute(*forStmt->increment);
+
+        for (const auto& increment : forStmt->increments) {
+            execute(*increment);
+        }
     }
 
     return;

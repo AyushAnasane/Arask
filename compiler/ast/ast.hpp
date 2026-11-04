@@ -88,6 +88,13 @@ struct IncrementStatement : Stmt {
         : name(std::move(name)) {}
 };
 
+struct DecrementStatement : Stmt {
+    std::string name;
+
+    explicit DecrementStatement(std::string name)
+        : name(std::move(name)) {}
+};
+
 struct CoutStatement : Stmt {
     std::unique_ptr<Expr> expression;
 
@@ -118,20 +125,20 @@ struct IfStatement : Stmt {
 };
 
 struct ForStatement : Stmt {
-    std::unique_ptr<Stmt> initializer;
+    std::vector<std::unique_ptr<Stmt>> initializers;
     std::unique_ptr<Expr> condition;
-    std::unique_ptr<Stmt> increment;
+    std::vector<std::unique_ptr<Stmt>> increments;
     std::unique_ptr<Stmt> body;
 
     ForStatement(
-        std::unique_ptr<Stmt> initializer,
+        std::vector<std::unique_ptr<Stmt>> initializers,
         std::unique_ptr<Expr> condition,
-        std::unique_ptr<Stmt> increment,
+        std::vector<std::unique_ptr<Stmt>> increments,
         std::unique_ptr<Stmt> body
     )
-        : initializer(std::move(initializer)),
+        : initializers(std::move(initializers)),
           condition(std::move(condition)),
-          increment(std::move(increment)),
+          increments(std::move(increments)),
           body(std::move(body)) {}
 };
 

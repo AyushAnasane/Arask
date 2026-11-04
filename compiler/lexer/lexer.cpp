@@ -108,6 +108,9 @@ void Lexer::scanToken() {
             if (peek() == '>') {
                 advance();
                 addToken(TokenType::Arrow);
+            } else if (peek() == '-') {
+                advance();
+                addToken(TokenType::MinusMinus);
             } else {
                 addToken(TokenType::Minus);
             }

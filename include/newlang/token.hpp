@@ -26,6 +26,7 @@ enum class TokenType {
     Plus,
     PlusPlus,
     Minus,
+    MinusMinus,
     Star,
     Slash,
 
