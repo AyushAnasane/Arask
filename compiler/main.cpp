@@ -7,6 +7,7 @@
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "interpreter/interpreter.hpp"
+#include "semantic/semantic_analyzer.hpp"
 
 int main(int argc, char* argv[]) {
 
@@ -33,11 +34,12 @@ int main(int argc, char* argv[]) {
         auto tokens = lexer.scanTokens();
 
         newlang::Parser parser(tokens);
-
         auto statements = parser.parse();
 
-        newlang::Interpreter interpreter;
+        newlang::SemanticAnalyzer semanticAnalyzer;
+        semanticAnalyzer.analyze(statements);
 
+        newlang::Interpreter interpreter;
         interpreter.execute(statements);
     }
     catch (const std::exception& error) {
