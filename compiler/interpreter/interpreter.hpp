@@ -7,24 +7,30 @@
 #include <optional>
 
 #include "ast/ast.hpp"
+#include "runtime/value.hpp"
 
 namespace newlang {
 
+struct Variable {
+    RuntimeValue value;
+    std::string typeName;
+};
+
 class Interpreter {
 private:
-    std::vector<std::unordered_map<std::string, int>> environments;
+    std::vector<std::unordered_map<std::string, Variable>> environments;
     std::unordered_map<std::string, const FunctionDeclaration*> functions;
 
-    std::optional<int> executeFunction(
+    std::optional<RuntimeValue> executeFunction(
         const FunctionDeclaration& function,
-        const std::vector<int>& arguments
+        const std::vector<RuntimeValue>& arguments
     );
 
 public:
     Interpreter();
 
-    int evaluate(const Expr& expression);
-    std::optional<int> execute(const Stmt& statement);
+    RuntimeValue evaluate(const Expr& expression);
+    std::optional<RuntimeValue> execute(const Stmt& statement);
     void execute(const std::vector<std::unique_ptr<Stmt>>& statements);
 };
 

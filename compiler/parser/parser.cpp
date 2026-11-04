@@ -175,13 +175,23 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
     );
 }
 
+
 std::unique_ptr<Stmt> Parser::variableDeclaration() {
     std::string name = consume(
         TokenType::Identifier,
         "Expected variable name."
     ).lexeme;
 
-    consume(TokenType::Equal, "Expected '=' after variable name.");
+    std::optional<std::string> typeName;
+
+    if (match(TokenType::Colon)) {
+        typeName = consume(
+            TokenType::Identifier,
+            "Expected type name after ':'."
+        ).lexeme;
+    }
+
+    consume(TokenType::Equal, "Expected '=' after variable declaration.");
 
     auto initializer = expression();
 
@@ -189,9 +199,11 @@ std::unique_ptr<Stmt> Parser::variableDeclaration() {
 
     return std::make_unique<VariableDeclaration>(
         name,
-        std::move(initializer)
+        std::move(initializer),
+        std::move(typeName)
     );
 }
+
 
 std::unique_ptr<Stmt> Parser::assignmentStatement() {
     std::string name = consume(
@@ -517,7 +529,7 @@ std::unique_ptr<Expr> Parser::unary() {
 std::unique_ptr<Expr> Parser::primary() {
     if (match(TokenType::Number)) {
         return std::make_unique<NumberExpr>(
-            std::stoi(previous().lexeme)
+            std::stoll(previous().lexeme)
         );
     }
 

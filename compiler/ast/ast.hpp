@@ -14,9 +14,9 @@ struct Expr {
 };
 
 struct NumberExpr : Expr {
-    int value;
+    std::int64_t value;
 
-    explicit NumberExpr(int value)
+    explicit NumberExpr(std::int64_t value)
         : value(value) {}
 };
 
@@ -80,16 +80,20 @@ struct ReturnStatement : Stmt {
         : value(std::move(value)) {}
 };
 
+
 struct VariableDeclaration : Stmt {
     std::string name;
     std::unique_ptr<Expr> initializer;
+    std::optional<std::string> typeName;
 
     VariableDeclaration(
         std::string name,
-        std::unique_ptr<Expr> initializer
+        std::unique_ptr<Expr> initializer,
+        std::optional<std::string> typeName = std::nullopt
     )
         : name(std::move(name)),
-          initializer(std::move(initializer)) {}
+          initializer(std::move(initializer)),
+          typeName(std::move(typeName)) {}
 };
 
 struct AssignmentStatement : Stmt {

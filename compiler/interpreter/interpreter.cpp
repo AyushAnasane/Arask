@@ -3,20 +3,143 @@
 #include <stdexcept>
 #include <limits>
 #include <vector>
+#include <cstdint>
+#include <type_traits>
 
 
 namespace newlang {
+
+    namespace {
+
+        bool checkedAdd(std::int64_t a, std::int64_t b, std::int64_t& result) {
+            if (b > 0 && a > std::numeric_limits<std::int64_t>::max() - b)
+                return false;
+
+            if (b < 0 && a < std::numeric_limits<std::int64_t>::min() - b)
+                return false;
+
+            result = a + b;
+            return true;
+        }
+
+        bool checkedSubtract(std::int64_t a, std::int64_t b, std::int64_t& result) {
+            if (b < 0 && a > std::numeric_limits<std::int64_t>::max() + b)
+                return false;
+
+            if (b > 0 && a < std::numeric_limits<std::int64_t>::min() + b)
+                return false;
+
+            result = a - b;
+            return true;
+        }
+
+        bool checkedMultiply(std::int64_t a, std::int64_t b, std::int64_t& result) {
+            if (a == 0 || b == 0) {
+                result = 0;
+                return true;
+            }
+
+            if (a == -1 && b == std::numeric_limits<std::int64_t>::min())
+                return false;
+
+            if (b == -1 && a == std::numeric_limits<std::int64_t>::min())
+                return false;
+
+            if (a > 0) {
+                if (b > 0 && a > std::numeric_limits<std::int64_t>::max() / b)
+                    return false;
+
+                if (b < 0 && b < std::numeric_limits<std::int64_t>::min() / a)
+                    return false;
+            } else {
+                if (b > 0 && a < std::numeric_limits<std::int64_t>::min() / b)
+                    return false;
+
+                if (b < 0 && a < std::numeric_limits<std::int64_t>::max() / b)
+                    return false;
+            }
+
+            result = a * b;
+            return true;
+        }
+
+
+        std::string inferType(const RuntimeValue& value) {
+            if (std::holds_alternative<std::int32_t>(value)) {
+                return "i32";
+            }
+
+            return "i64";
+        }
+
+        std::string normalizeType(const std::string& typeName) {
+            if (typeName == "int") {
+                return "i32";
+            }
+
+            if (typeName == "i32" || typeName == "i64") {
+                return typeName;
+            }
+
+            throw std::runtime_error("Unsupported integer type: " + typeName);
+        }
+
+        Variable createVariable(
+            RuntimeValue value,
+            const std::optional<std::string>& declaredType = std::nullopt
+        ) {
+            std::string typeName = declaredType
+                ? normalizeType(*declaredType)
+                : inferType(value);
+
+            if (typeName == "i32") {
+                std::int64_t number = std::visit(
+                    [](auto value) {
+                        return static_cast<std::int64_t>(value);
+                    },
+                    value
+                );
+
+                if (number < std::numeric_limits<std::int32_t>::min() ||
+                    number > std::numeric_limits<std::int32_t>::max()) {
+                    throw std::runtime_error("32-bit integer overflow.");
+                }
+
+                value = RuntimeValue{static_cast<std::int32_t>(number)};
+            } else {
+                value = std::visit(
+                    [](auto number) -> RuntimeValue {
+                        return RuntimeValue{static_cast<std::int64_t>(number)};
+                    },
+                    value
+                );
+            }
+
+            return Variable{value, typeName};
+        }
+
+        void assignVariable(Variable& variable, RuntimeValue value) {
+            variable = createVariable(value, variable.typeName);
+        }
+
+
+}
 
     Interpreter::Interpreter() {
         environments.emplace_back();
     }
 
-int Interpreter::evaluate(const Expr& expression) {
+
+RuntimeValue Interpreter::evaluate(const Expr& expression) {
 
     if (const auto* number = dynamic_cast<const NumberExpr*>(&expression)) {
-        return number->value;
-    }
+        if (number->value >= std::numeric_limits<std::int32_t>::min() &&
+            number->value <= std::numeric_limits<std::int32_t>::max()) {
+            return RuntimeValue{static_cast<std::int32_t>(number->value)};
+        }
 
+        return RuntimeValue{number->value};
+    }
 
     if (const auto* call = dynamic_cast<const CallExpr*>(&expression)) {
         auto function = functions.find(call->name);
@@ -25,13 +148,13 @@ int Interpreter::evaluate(const Expr& expression) {
             throw std::runtime_error("Undefined function: " + call->name);
         }
 
-        std::vector<int> arguments;
+        std::vector<RuntimeValue> arguments;
 
         for (const auto& argument : call->arguments) {
             arguments.push_back(evaluate(*argument));
         }
 
-        std::optional<int> result = executeFunction(
+        std::optional<RuntimeValue> result = executeFunction(
             *function->second,
             arguments
         );
@@ -45,57 +168,106 @@ int Interpreter::evaluate(const Expr& expression) {
         return *result;
     }
 
-
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
         for (auto it = environments.rbegin(); it != environments.rend(); ++it) {
             auto value = it->find(variable->name);
 
             if (value != it->end()) {
-                return value->second;
+                return value->second.value;
             }
         }
 
         throw std::runtime_error("Undefined variable: " + variable->name);
     }
 
-
     if (const auto* unary = dynamic_cast<const UnaryExpr*>(&expression)) {
-        int value = evaluate(*unary->right);
+    RuntimeValue value = evaluate(*unary->right);
 
-        if (unary->op == "-") return -value;
-        if (unary->op == "+") return value;
+    if (unary->op == "+") {
+        return value;
     }
 
-    if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
+    if (unary->op == "-") {
+        return std::visit([](auto number) -> RuntimeValue {
+            using T = decltype(number);
 
-        int left = evaluate(*binary->left);
-        int right = evaluate(*binary->right);
-
-        if (binary->op == "+") return left + right;
-        if (binary->op == "-") return left - right;
-        if (binary->op == "*") return left * right;
-        if (binary->op == "/") {
-            if (right == 0) {
-                throw std::runtime_error("Division by zero.");
+            if (number == std::numeric_limits<T>::min()) {
+                throw std::runtime_error("Integer overflow.");
             }
 
-            return left / right;
-        }
-        if (binary->op == "==") return left == right;
-        if (binary->op == "!=") return left != right;
-        if (binary->op == "<") return left < right;
-        if (binary->op == "<=") return left <= right;
-        if (binary->op == ">") return left > right;
-        if (binary->op == ">=") return left >= right;
+            return RuntimeValue{static_cast<T>(-number)};
+        }, value);
+    }
+}
+
+    if (const auto* binary = dynamic_cast<const BinaryExpr*>(&expression)) {
+    RuntimeValue leftValue = evaluate(*binary->left);
+    RuntimeValue rightValue = evaluate(*binary->right);
+
+    std::int64_t left = std::visit(
+        [](auto value) { return static_cast<std::int64_t>(value); },
+        leftValue
+    );
+
+    std::int64_t right = std::visit(
+        [](auto value) { return static_cast<std::int64_t>(value); },
+        rightValue
+    );
+
+    bool use64 =
+        std::holds_alternative<std::int64_t>(leftValue) ||
+        std::holds_alternative<std::int64_t>(rightValue);
+
+    if (binary->op == "==") return RuntimeValue{static_cast<std::int32_t>(left == right)};
+    if (binary->op == "!=") return RuntimeValue{static_cast<std::int32_t>(left != right)};
+    if (binary->op == "<") return RuntimeValue{static_cast<std::int32_t>(left < right)};
+    if (binary->op == "<=") return RuntimeValue{static_cast<std::int32_t>(left <= right)};
+    if (binary->op == ">") return RuntimeValue{static_cast<std::int32_t>(left > right)};
+    if (binary->op == ">=") return RuntimeValue{static_cast<std::int32_t>(left >= right)};
+
+    std::int64_t result = 0;
+    bool success = false;
+
+    if (binary->op == "+") {
+        success = checkedAdd(left, right, result);
+    } else if (binary->op == "-") {
+        success = checkedSubtract(left, right, result);
+    } else if (binary->op == "*") {
+        success = checkedMultiply(left, right, result);
+    } else if (binary->op == "/") {
+        if (right == 0)
+            throw std::runtime_error("Division by zero.");
+
+        if (left == std::numeric_limits<std::int64_t>::min() && right == -1)
+            throw std::runtime_error("Integer overflow.");
+
+        result = left / right;
+        success = true;
     }
 
-    throw std::runtime_error("Unsupported expression.");
+    if (!success)
+        throw std::runtime_error("Integer overflow.");
+
+    if (!use64) {
+        if (result < std::numeric_limits<std::int32_t>::min() ||
+            result > std::numeric_limits<std::int32_t>::max()) {
+            throw std::runtime_error("32-bit integer overflow.");
+        }
+
+        return RuntimeValue{static_cast<std::int32_t>(result)};
+    }
+
+    return RuntimeValue{result};
+}
+throw std::runtime_error("Unsupported expression.");
 }
 
 
-std::optional<int> Interpreter::executeFunction(
+
+
+std::optional<RuntimeValue> Interpreter::executeFunction(
     const FunctionDeclaration& function,
-    const std::vector<int>& arguments
+    const std::vector<RuntimeValue>& arguments
 ) {
     if (arguments.size() != function.parameters.size()) {
         throw std::runtime_error(
@@ -107,10 +279,27 @@ std::optional<int> Interpreter::executeFunction(
 
     try {
         for (std::size_t i = 0; i < arguments.size(); ++i) {
-            environments.back()[function.parameters[i].name] = arguments[i];
+            environments.back()[function.parameters[i].name] =
+                createVariable(
+                    arguments[i],
+                    function.parameters[i].typeName
+                );
         }
 
-        std::optional<int> result = execute(*function.body);
+        std::optional<RuntimeValue> result = execute(*function.body);
+
+        if (function.returnType) {
+            if (!result.has_value()) {
+                throw std::runtime_error(
+                    "Function did not return a value: " + function.name
+                );
+            }
+
+            result = createVariable(
+                *result,
+                function.returnType
+            ).value;
+        }
 
         environments.pop_back();
 
@@ -124,7 +313,9 @@ std::optional<int> Interpreter::executeFunction(
 
 
 
-std::optional<int> Interpreter::execute(const Stmt& statement) {
+
+
+std::optional<RuntimeValue> Interpreter::execute(const Stmt& statement) {
 
     if (dynamic_cast<const FunctionDeclaration*>(&statement)) {
         return std::nullopt;
@@ -142,7 +333,7 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
             throw std::runtime_error("Undefined function: " + call->name);
         }
 
-        std::vector<int> arguments;
+        std::vector<RuntimeValue> arguments;
 
         for (const auto& argument : call->arguments) {
             arguments.push_back(evaluate(*argument));
@@ -155,8 +346,12 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
     if (const auto* declaration =
         dynamic_cast<const VariableDeclaration*>(&statement)) {
 
-        int value = evaluate(*declaration->initializer);
-        environments.back()[declaration->name] = value;
+        RuntimeValue value = evaluate(*declaration->initializer);
+
+        environments.back()[declaration->name] = createVariable(
+            value,
+            declaration->typeName
+        );
 
         return std::nullopt;
     }
@@ -168,8 +363,10 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
             auto variable = it->find(assignment->name);
 
             if (variable != it->end()) {
-                int value = evaluate(*assignment->value);
-                variable->second = value;
+                assignVariable(
+                    variable->second,
+                    evaluate(*assignment->value)
+                );
                 return std::nullopt;
             }
         }
@@ -184,7 +381,16 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
             auto variable = it->find(increment->name);
 
             if (variable != it->end()) {
-                variable->second++;
+                std::visit([](auto& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if (value == std::numeric_limits<T>::max()) {
+                        throw std::runtime_error("Integer overflow.");
+                    }
+
+                    ++value;
+                }, variable->second.value);
+
                 return std::nullopt;
             }
         }
@@ -199,7 +405,16 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
             auto variable = it->find(decrement->name);
 
             if (variable != it->end()) {
-                variable->second--;
+                std::visit([](auto& value) {
+                    using T = std::decay_t<decltype(value)>;
+
+                    if (value == std::numeric_limits<T>::min()) {
+                        throw std::runtime_error("Integer overflow.");
+                    }
+
+                    --value;
+                }, variable->second.value);
+
                 return std::nullopt;
             }
         }
@@ -208,8 +423,11 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
     }
 
     if (const auto* output = dynamic_cast<const CoutStatement*>(&statement)) {
-        int value = evaluate(*output->expression);
-        std::cout << value << '\n';
+        auto value = evaluate(*output->expression);
+
+        std::visit([](const auto& number) {
+            std::cout << number << '\n';
+        }, value);
 
         return std::nullopt;
     }
@@ -227,9 +445,9 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
     }
 
     if (const auto* ifStmt = dynamic_cast<const IfStatement*>(&statement)) {
-        int condition = evaluate(*ifStmt->condition);
+        auto condition = evaluate(*ifStmt->condition);
 
-        if (condition != 0) {
+        if (std::visit([](auto value) { return value != 0; }, condition)) {
             return execute(*ifStmt->thenBranch);
         }
 
@@ -250,7 +468,12 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
             }
         }
 
-        while (evaluate(*forStmt->condition) != 0) {
+        while (
+                std::visit(
+                    [](auto value) { return value != 0; },
+                    evaluate(*forStmt->condition)
+                )
+            ) {
             auto result = execute(*forStmt->body);
 
             if (result.has_value()) {
@@ -270,53 +493,85 @@ std::optional<int> Interpreter::execute(const Stmt& statement) {
     }
 
     if (const auto* range =
-        dynamic_cast<const RangeForStatement*>(&statement)) {
+    dynamic_cast<const RangeForStatement*>(&statement)) {
 
-        int start = evaluate(*range->start);
-        int end = evaluate(*range->end);
+    RuntimeValue startValue = evaluate(*range->start);
+    RuntimeValue endValue = evaluate(*range->end);
 
-        int step = range->step
-            ? evaluate(*range->step)
-            : 1;
+    RuntimeValue stepValue = range->step
+        ? evaluate(*range->step)
+        : RuntimeValue{std::int32_t{1}};
 
-        if (step <= 0) {
-            throw std::runtime_error(
-                "Range step must be a positive integer."
-            );
-        }
+    auto toInt64 = [](const RuntimeValue& value) {
+        return std::visit(
+            [](auto number) {
+                return static_cast<std::int64_t>(number);
+            },
+            value
+        );
+    };
 
-        int direction = (start <= end) ? 1 : -1;
-        long long current = start;
+    std::int64_t start = toInt64(startValue);
+    std::int64_t end = toInt64(endValue);
+    std::int64_t step = toInt64(stepValue);
 
-        while (
-            direction == 1
-                ? (range->inclusive ? current <= end : current < end)
-                : (range->inclusive ? current >= end : current > end)
-        ) {
-            environments.back()[range->variable] = static_cast<int>(current);
+    bool use64 =
+        std::holds_alternative<std::int64_t>(startValue) ||
+        std::holds_alternative<std::int64_t>(endValue) ||
+        std::holds_alternative<std::int64_t>(stepValue);
 
-            auto result = execute(*range->body);
-
-            if (result.has_value()) {
-                return result;
-            }
-
-            long long next = current +
-                (direction * static_cast<long long>(step));
-
-            if (next < std::numeric_limits<int>::min() ||
-                next > std::numeric_limits<int>::max()) {
-                break;
-            }
-
-            current = next;
-        }
-
-        return std::nullopt;
+    if (step <= 0) {
+        throw std::runtime_error(
+            "Range step must be a positive integer."
+        );
     }
 
-    throw std::runtime_error("Unsupported statement.");
+    int direction = (start <= end) ? 1 : -1;
+    std::int64_t current = start;
+
+    while (
+        direction == 1
+            ? (range->inclusive ? current <= end : current < end)
+            : (range->inclusive ? current >= end : current > end)
+    ) {
+        if (use64) {
+            environments.back()[range->variable] =
+                createVariable(RuntimeValue{current});
+        } else {
+            environments.back()[range->variable] =
+                createVariable(RuntimeValue{static_cast<std::int32_t>(current)});
+        }
+
+        auto result = execute(*range->body);
+
+        if (result.has_value()) {
+            return result;
+        }
+
+        std::int64_t next = 0;
+
+        bool success = direction == 1
+            ? checkedAdd(current, step, next)
+            : checkedSubtract(current, step, next);
+
+        if (!success) {
+            break;
+        }
+
+        if (!use64 &&
+            (next < std::numeric_limits<std::int32_t>::min() ||
+             next > std::numeric_limits<std::int32_t>::max())) {
+            break;
+        }
+
+        current = next;
+    }
+
+    return std::nullopt;
 }
+throw std::runtime_error("Unsupported statement.");
+}
+
 
 
 

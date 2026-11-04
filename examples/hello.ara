@@ -1,11 +1,5 @@
-fn factorial(n: int) -> i128 {
-    if (n <= 1) {
-        return 1;
-    }
-
-    return n * factorial(n - 1);
-}
-
 fn main() {
-    cout(factorial(16));
+    for (let i = 0, 10, 2) {
+        cout(i);
+    }
 }
