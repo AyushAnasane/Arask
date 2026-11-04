@@ -217,11 +217,25 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
 std::unique_ptr<Stmt> Parser::forStatement() {
     consume(TokenType::LeftParen, "Expected '(' after for.");
 
-    std::unique_ptr<Stmt> initializer;
+    consume(TokenType::Let, "Expected 'let' in for loop.");
 
-    if (match(TokenType::Let)) {
-        initializer = variableDeclaration();
+    std::string variable = consume(
+        TokenType::Identifier,
+        "Expected loop variable."
+    ).lexeme;
+
+    consume(TokenType::Equal, "Expected '=' after loop variable.");
+
+    auto start = expression();
+
+    if (match(TokenType::Comma)) {
+        return rangeForStatement(
+            std::move(variable),
+            std::move(start)
+        );
     }
+
+    consume(TokenType::Semicolon, "Expected ';' after loop initializer.");
 
     auto condition = expression();
 
@@ -230,15 +244,56 @@ std::unique_ptr<Stmt> Parser::forStatement() {
     auto increment = incrementExpression();
 
     consume(TokenType::RightParen, "Expected ')' after for clauses.");
-
+    
     consume(TokenType::LeftBrace, "Expected '{' before loop body.");
 
     auto body = blockStatement();
+
+    auto initializer = std::make_unique<VariableDeclaration>(
+        variable,
+        std::move(start)
+    );
 
     return std::make_unique<ForStatement>(
         std::move(initializer),
         std::move(condition),
         std::move(increment),
+        std::move(body)
+    );
+}
+
+std::unique_ptr<Stmt> Parser::rangeForStatement(
+    std::string variable,
+    std::unique_ptr<Expr> start
+) {
+    bool inclusive = match(TokenType::Equal);
+
+    auto end = expression();
+
+    std::unique_ptr<Expr> step = nullptr;
+
+    if (match(TokenType::Comma)) {
+        step = expression();
+    }
+
+    consume(
+        TokenType::RightParen,
+        "Expected ')' after range."
+    );
+
+    consume(
+        TokenType::LeftBrace,
+        "Expected '{' before loop body."
+    );
+
+    auto body = blockStatement();
+
+    return std::make_unique<RangeForStatement>(
+        std::move(variable),
+        std::move(start),
+        std::move(end),
+        std::move(step),
+        inclusive,
         std::move(body)
     );
 }

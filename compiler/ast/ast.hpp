@@ -135,4 +135,28 @@ struct ForStatement : Stmt {
           body(std::move(body)) {}
 };
 
+struct RangeForStatement : Stmt {
+    std::string variable;
+    std::unique_ptr<Expr> start;
+    std::unique_ptr<Expr> end;
+    std::unique_ptr<Expr> step;
+    bool inclusive;
+    std::unique_ptr<Stmt> body;
+
+    RangeForStatement(
+        std::string variable,
+        std::unique_ptr<Expr> start,
+        std::unique_ptr<Expr> end,
+        std::unique_ptr<Expr> step,
+        bool inclusive,
+        std::unique_ptr<Stmt> body
+    )
+        : variable(std::move(variable)),
+          start(std::move(start)),
+          end(std::move(end)),
+          step(std::move(step)),
+          inclusive(inclusive),
+          body(std::move(body)) {}
+};
+
 }

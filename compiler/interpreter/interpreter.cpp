@@ -1,6 +1,7 @@
 #include "interpreter/interpreter.hpp"
 #include <iostream>
 #include <stdexcept>
+#include <limits>
 
 namespace newlang {
 
@@ -122,6 +123,48 @@ void Interpreter::execute(const Stmt& statement) {
     while (evaluate(*forStmt->condition) != 0) {
         execute(*forStmt->body);
         execute(*forStmt->increment);
+    }
+
+    return;
+}
+
+if (const auto* range =
+    dynamic_cast<const RangeForStatement*>(&statement)) {
+
+    int start = evaluate(*range->start);
+    int end = evaluate(*range->end);
+
+    int step = range->step
+        ? evaluate(*range->step)
+        : 1;
+
+    if (step <= 0) {
+        throw std::runtime_error(
+            "Range step must be a positive integer."
+        );
+    }
+
+    int direction = (start <= end) ? 1 : -1;
+
+    long long current = start;
+
+    while (
+        direction == 1
+            ? (range->inclusive ? current <= end : current < end)
+            : (range->inclusive ? current >= end : current > end)
+    ) {
+        environment[range->variable] = static_cast<int>(current);
+
+        execute(*range->body);
+
+        long long next = current + (direction * static_cast<long long>(step));
+
+        if (next < std::numeric_limits<int>::min() ||
+            next > std::numeric_limits<int>::max()) {
+            break;
+        }
+
+        current = next;
     }
 
     return;

@@ -278,6 +278,79 @@ int main() {
     assert(addition->op == "+");
 }
 
+{
+    auto parseRange = [](const std::string& source) {
+        Lexer lexer(source);
+        auto tokens = lexer.scanTokens();
+        Parser parser(tokens);
+        return parser.parse();
+    };
+
+    auto getNumber = [](const std::unique_ptr<Expr>& expression) {
+        auto* number = dynamic_cast<NumberExpr*>(expression.get());
+        assert(number != nullptr);
+        return number->value;
+    };
+
+    {
+        auto statements = parseRange("for (let i = 0, 5) {}");
+
+        assert(statements.size() == 1);
+
+        auto* range = dynamic_cast<RangeForStatement*>(statements[0].get());
+
+        assert(range != nullptr);
+        assert(range->variable == "i");
+        assert(getNumber(range->start) == 0);
+        assert(getNumber(range->end) == 5);
+        assert(range->step == nullptr);
+        assert(range->inclusive == false);
+    }
+
+    {
+        auto statements = parseRange("for (let i = 0, =5) {}");
+
+        auto* range = dynamic_cast<RangeForStatement*>(statements[0].get());
+
+        assert(range != nullptr);
+        assert(range->inclusive == true);
+        assert(getNumber(range->end) == 5);
+    }
+
+    {
+        auto statements = parseRange("for (let i = 5, 0) {}");
+
+        auto* range = dynamic_cast<RangeForStatement*>(statements[0].get());
+
+        assert(range != nullptr);
+        assert(getNumber(range->start) == 5);
+        assert(getNumber(range->end) == 0);
+        assert(range->inclusive == false);
+    }
+
+    {
+        auto statements = parseRange("for (let i = 0, 10, 2) {}");
+
+        auto* range = dynamic_cast<RangeForStatement*>(statements[0].get());
+
+        assert(range != nullptr);
+        assert(getNumber(range->start) == 0);
+        assert(getNumber(range->end) == 10);
+        assert(getNumber(range->step) == 2);
+    }
+
+    {
+        auto statements = parseRange("for (let i = 10, 0, 2) {}");
+
+        auto* range = dynamic_cast<RangeForStatement*>(statements[0].get());
+
+        assert(range != nullptr);
+        assert(getNumber(range->start) == 10);
+        assert(getNumber(range->end) == 0);
+        assert(getNumber(range->step) == 2);
+    }
+}
+
 std::cout << "All parser tests passed!\n";
 
 return 0;

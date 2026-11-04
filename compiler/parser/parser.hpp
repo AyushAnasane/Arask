@@ -31,6 +31,10 @@ private:
     std::unique_ptr<Stmt> blockStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> forStatement();
+    std::unique_ptr<Stmt> rangeForStatement(
+        std::string variable,
+        std::unique_ptr<Expr> start
+    );
     std::unique_ptr<Stmt> incrementExpression();
 
     std::unique_ptr<Expr> expression();
