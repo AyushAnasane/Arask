@@ -193,6 +193,130 @@ int main() {
         assert(output == "10\n20\n30\n");
     }
 
+
+std::cerr << "Test 13: Return stops function execution\n";
+    {
+        std::string output = runProgram(
+            "fn test() -> i32 {"
+            "cout(10);"
+            "return 50;"
+            "cout(20);"
+            "}"
+            "fn main() {"
+            "test();"
+            "cout(1);"
+            "}"
+        );
+        
+        assert(output == "10\n1\n");
+        std::cerr << "Captured output:\n" << output;
+        
+    }
+
+
+std::cerr << "Test 14: Function return values\n";
+    {
+        std::string output = runProgram(
+            "fn add(a: i32, b: i32) -> i32 {"
+            "return a + b;"
+            "}"
+            "fn main() {"
+            "let result = add(10, 20);"
+            "cout(result);"
+            "}"
+        );
+
+        assert(output == "30\n");
+    }
+
+
+std::cerr << "Test 15: Nested function calls\n";
+    {
+        std::string output = runProgram(
+            "fn add(a: i32, b: i32) -> i32 {"
+            "return a + b;"
+            "}"
+            "fn square(n: i32) -> i32 {"
+            "return n * n;"
+            "}"
+            "fn main() {"
+            "let result = square(add(2, 3));"
+            "cout(result);"
+            "}"
+        );
+
+        assert(output == "25\n");
+    }
+
+
+
+std::cerr << "Test 16: Recursive factorial\n";
+    {
+        std::string output = runProgram(
+            "fn factorial(n: i32) -> i32 {"
+            "if (n <= 1) {"
+            "return 1;"
+            "}"
+            "return n * factorial(n - 1);"
+            "}"
+            "fn main() {"
+            "cout(factorial(5));"
+            "}"
+        );
+
+        assert(output == "120\n");
+    }
+
+
+    {
+    std::string output = runProgram(
+        "fn zero() -> i32 {"
+        "return 0;"
+        "}"
+        "fn main() {"
+        "cout(zero());"
+        "}"
+    );
+
+    assert(output == "0\n");
+}
+
+{
+    std::string output = runProgram(
+        "fn find() -> i32 {"
+        "for (let i = 0; i < 10; i++) {"
+        "if (i == 4) {"
+        "return i;"
+        "}"
+        "}"
+        "return -1;"
+        "}"
+        "fn main() {"
+        "cout(find());"
+        "}"
+    );
+
+    assert(output == "4\n");
+}
+
+
+{
+    std::string output = runProgram(
+        "fn choose(n: i32) -> i32 {"
+        "if (n > 10) {"
+        "return 100;"
+        "}"
+        "return 1;"
+        "}"
+        "fn main() {"
+        "cout(choose(20));"
+        "cout(choose(5));"
+        "}"
+    );
+
+    assert(output == "100\n1\n");
+}
+
     std::cerr << "All interpreter tests passed!\n";
 
     return 0;

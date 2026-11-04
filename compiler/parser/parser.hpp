@@ -49,6 +49,7 @@ private:
     std::unique_ptr<Expr> factor();
     std::unique_ptr<Expr> unary();
     std::unique_ptr<Expr> primary();
+    std::unique_ptr<Expr> callExpression();
 
 public:
     explicit Parser(const std::vector<Token>& tokens);

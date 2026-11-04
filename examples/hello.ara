@@ -1,14 +1,11 @@
-fn add(a: i32, b: i32) -> i32 {
-    return a + b;
-}
+fn factorial(n: int) -> i128 {
+    if (n <= 1) {
+        return 1;
+    }
 
-fn square(n: i32) -> i32 {
-    return n * n;
+    return n * factorial(n - 1);
 }
 
 fn main() {
-    let result = add(10, 20);
-    let answer = square(result);
-
-    cout(answer);
+    cout(factorial(16));
 }

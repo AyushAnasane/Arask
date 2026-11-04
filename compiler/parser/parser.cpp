@@ -513,6 +513,7 @@ std::unique_ptr<Expr> Parser::unary() {
     return primary();
 }
 
+
 std::unique_ptr<Expr> Parser::primary() {
     if (match(TokenType::Number)) {
         return std::make_unique<NumberExpr>(
@@ -521,7 +522,29 @@ std::unique_ptr<Expr> Parser::primary() {
     }
 
     if (match(TokenType::Identifier)) {
-        return std::make_unique<VariableExpr>(previous().lexeme);
+        std::string name = previous().lexeme;
+
+        if (match(TokenType::LeftParen)) {
+            std::vector<std::unique_ptr<Expr>> arguments;
+
+            if (!check(TokenType::RightParen)) {
+                do {
+                    arguments.push_back(expression());
+                } while (match(TokenType::Comma));
+            }
+
+            consume(
+                TokenType::RightParen,
+                "Expected ')' after function arguments."
+            );
+
+            return std::make_unique<CallExpr>(
+                std::move(name),
+                std::move(arguments)
+            );
+        }
+
+        return std::make_unique<VariableExpr>(std::move(name));
     }
 
     if (match(TokenType::LeftParen)) {
@@ -534,5 +557,6 @@ std::unique_ptr<Expr> Parser::primary() {
 
     throw std::runtime_error("Expected expression.");
 }
+
 
 }

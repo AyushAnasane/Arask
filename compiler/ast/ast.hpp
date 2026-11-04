@@ -27,6 +27,21 @@ struct VariableExpr : Expr {
         : name(std::move(name)) {}
 };
 
+
+
+struct CallExpr : Expr {
+    std::string name;
+    std::vector<std::unique_ptr<Expr>> arguments;
+
+    CallExpr(
+        std::string name,
+        std::vector<std::unique_ptr<Expr>> arguments
+    )
+        : name(std::move(name)),
+          arguments(std::move(arguments)) {}
+};
+
+
 struct BinaryExpr : Expr {
     std::unique_ptr<Expr> left;
     std::string op;
