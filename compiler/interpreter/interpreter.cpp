@@ -2,8 +2,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <limits>
+#include <vector>
+
 
 namespace newlang {
+
+    Interpreter::Interpreter() {
+        environments.emplace_back();
+    }
 
 int Interpreter::evaluate(const Expr& expression) {
 
@@ -12,13 +18,15 @@ int Interpreter::evaluate(const Expr& expression) {
     }
 
     if (const auto* variable = dynamic_cast<const VariableExpr*>(&expression)) {
-        auto it = environment.find(variable->name);
+        for (auto it = environments.rbegin(); it != environments.rend(); ++it) {
+            auto value = it->find(variable->name);
 
-        if (it == environment.end()) {
-            throw std::runtime_error("Undefined variable: " + variable->name);
+            if (value != it->end()) {
+                return value->second;
+            }
         }
 
-        return it->second;
+        throw std::runtime_error("Undefined variable: " + variable->name);
     }
 
 
@@ -55,11 +63,37 @@ int Interpreter::evaluate(const Expr& expression) {
     throw std::runtime_error("Unsupported expression.");
 }
 
+void Interpreter::executeFunction(
+    const FunctionDeclaration& function,
+    const std::vector<int>& arguments
+) {
+    if (arguments.size() != function.parameters.size()) {
+        throw std::runtime_error(
+            "Wrong number of arguments for function: " + function.name
+        );
+    }
+
+    environments.emplace_back();
+
+    try {
+        for (std::size_t i = 0; i < arguments.size(); ++i) {
+            environments.back()[function.parameters[i].name] = arguments[i];
+        }
+
+        execute(*function.body);
+    }
+    catch (...) {
+        environments.pop_back();
+        throw;
+    }
+
+    environments.pop_back();
+}
+
 void Interpreter::execute(const Stmt& statement) {
 
+
     if (dynamic_cast<const FunctionDeclaration*>(&statement)) {
-        // Function invocation is not implemented yet. A declaration only
-        // introduces program structure, so its body must not run at top level.
         return;
     }
 
@@ -70,18 +104,13 @@ void Interpreter::execute(const Stmt& statement) {
             throw std::runtime_error("Undefined function: " + call->name);
         }
 
-        if (call->arguments.size() != function->second->parameters.size()) {
-            throw std::runtime_error("Wrong number of arguments for function: " + call->name);
+        std::vector<int> arguments;
+
+        for (const auto& argument : call->arguments) {
+            arguments.push_back(evaluate(*argument));
         }
 
-        for (std::size_t i = 0; i < call->arguments.size(); ++i) {
-            const std::string& parameterName =
-                function->second->parameters[i].name;
-
-            environment[parameterName] = evaluate(*call->arguments[i]);
-        }
-
-        execute(*function->second->body);
+        executeFunction(*function->second, arguments);
         return;
     }
 
@@ -90,36 +119,50 @@ void Interpreter::execute(const Stmt& statement) {
 
         int value = evaluate(*declaration->initializer);
 
-        environment[declaration->name] = value;
+        environments.back()[declaration->name] = value;
 
         return;
     }
 
     if (const auto* assignment = dynamic_cast<const AssignmentStatement*>(&statement)) {
-        if (environment.find(assignment->name) == environment.end()) {
-            throw std::runtime_error("Undefined variable: " + assignment->name);
+        for (auto it = environments.rbegin(); it != environments.rend(); ++it) {
+            auto variable = it->find(assignment->name);
+
+            if (variable != it->end()) {
+                int value = evaluate(*assignment->value);
+                variable->second = value;
+                return;
+            }
         }
 
-        int value = evaluate(*assignment->value);
-        environment[assignment->name] = value;
-        return;
+        throw std::runtime_error("Undefined variable: " + assignment->name);
     }
 
     if (const auto* increment = dynamic_cast<const IncrementStatement*>(&statement)) {
-        auto it = environment.find(increment->name);
+        for (auto it = environments.rbegin(); it != environments.rend(); ++it) {
+            auto variable = it->find(increment->name);
 
-        if (it == environment.end()) {
-            throw std::runtime_error("Undefined variable: " + increment->name);
+            if (variable != it->end()) {
+                variable->second++;
+                return;
+            }
         }
 
-        it->second++;
-        return;
+        throw std::runtime_error("Undefined variable: " + increment->name);
     }
 
     if (const auto* decrement = dynamic_cast<const DecrementStatement*>(&statement)) {
-        environment[decrement->name]--;
-        return;
+    for (auto it = environments.rbegin(); it != environments.rend(); ++it) {
+        auto variable = it->find(decrement->name);
+
+        if (variable != it->end()) {
+            variable->second--;
+            return;
+        }
     }
+
+    throw std::runtime_error("Undefined variable: " + decrement->name);
+}
 
     if (const auto* output = dynamic_cast<const CoutStatement*>(&statement)) {
         int value = evaluate(*output->expression);
@@ -189,7 +232,7 @@ if (const auto* range =
             ? (range->inclusive ? current <= end : current < end)
             : (range->inclusive ? current >= end : current > end)
     ) {
-        environment[range->variable] = static_cast<int>(current);
+        environments.back()[range->variable] = static_cast<int>(current);
 
         execute(*range->body);
 
@@ -235,14 +278,12 @@ void Interpreter::execute(
         }
     }
 
-    // A declared main function is the program's entry point. Until ordinary
-    // function calls are implemented, only main receives this special handling.
+   
     if (mainFunction) {
-        execute(*mainFunction->body);
+        executeFunction(*mainFunction, {});
         return;
     }
 
-    // Keep earlier script-style programs working when no main function exists.
     for (const auto& statement : statements) {
         execute(*statement);
     }

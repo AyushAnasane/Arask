@@ -36,6 +36,8 @@ std::string runProgram(const std::string& source) {
 }
 
 int main() {
+
+    std::cerr << "Test 1: Basic arithmetic\n";
     {
         std::string output = runProgram(
             "let a = 10;"
@@ -47,6 +49,7 @@ int main() {
         assert(output == "30\n");
     }
 
+    std::cerr << "Test 2: Increment and decrement\n";
     {
         std::string output = runProgram(
             "let i = 0;"
@@ -59,6 +62,7 @@ int main() {
         assert(output == "1\n");
     }
 
+    std::cerr << "Test 3: Basic for loop\n";
     {
         std::string output = runProgram(
             "for (let i = 0; i < 3; i++) {"
@@ -69,6 +73,7 @@ int main() {
         assert(output == "0\n1\n2\n");
     }
 
+    std::cerr << "Test 4: Multiple loop variables\n";
     {
         std::string output = runProgram(
             "for (let i = 0, j = 10; i < 3; i++, j--) {"
@@ -80,6 +85,7 @@ int main() {
         assert(output == "0\n10\n1\n9\n2\n8\n");
     }
 
+    std::cerr << "Test 5: Multiplication update\n";
     {
         std::string output = runProgram(
             "for (let i = 1; i < 100; i = i * 2) {"
@@ -90,6 +96,7 @@ int main() {
         assert(output == "1\n2\n4\n8\n16\n32\n64\n");
     }
 
+    std::cerr << "Test 6: Multiple assignment updates\n";
     {
         std::string output = runProgram(
             "for (let i = 0, j = 100; i < 10; i = i + 2, j = j / 2) {"
@@ -101,6 +108,7 @@ int main() {
         assert(output == "0\n100\n2\n50\n4\n25\n6\n12\n8\n6\n");
     }
 
+    std::cerr << "Test 7: Ignore functions without main\n";
     {
         std::string output = runProgram(
             "fn hidden() { cout(99); }"
@@ -110,6 +118,7 @@ int main() {
         assert(output == "1\n");
     }
 
+    std::cerr << "Test 8: Main entry point\n";
     {
         std::string output = runProgram(
             "fn helper() { cout(99); }"
@@ -123,6 +132,7 @@ int main() {
         assert(output == "10\n0\n1\n");
     }
 
+    std::cerr << "Test 9: Function calls\n";
     {
         std::string output = runProgram(
             "fn main() {"
@@ -134,6 +144,8 @@ int main() {
 
         assert(output == "100\n1\n");
     }
+
+    std::cerr << "Test 10: Function parameters\n";
     {
         std::string output = runProgram(
             "fn printScore(score: i32) {"
@@ -144,10 +156,10 @@ int main() {
             "}"
         );
 
-        assert(output=="42\n");
-
+        assert(output == "42\n");
     }
-    std::cout << "All interpreter tests passed!\n";
+
+    std::cerr << "All interpreter tests passed!\n";
 
     return 0;
 }
