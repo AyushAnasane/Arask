@@ -54,6 +54,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
+    if (match(TokenType::Fn)) return functionDeclaration();
     if (match(TokenType::Let)) return variableDeclaration();
     if (match(TokenType::Cout)) return coutStatement();
     if (match(TokenType::For)) return forStatement();
@@ -62,6 +63,10 @@ std::unique_ptr<Stmt> Parser::statement() {
 
     if (check(TokenType::Identifier)) {
         if (current + 1 < tokens.size()) {
+            if (tokens[current + 1].type == TokenType::LeftParen) {
+                return functionCallStatement();
+            }
+
             if (tokens[current + 1].type == TokenType::PlusPlus) {
                 return incrementStatement();
             }
@@ -77,6 +82,71 @@ std::unique_ptr<Stmt> Parser::statement() {
     }
 
     throw std::runtime_error("Unexpected statement.");
+}
+
+std::unique_ptr<Stmt> Parser::functionCallStatement() {
+    std::string name = consume(
+        TokenType::Identifier,
+        "Expected function name."
+    ).lexeme;
+
+    consume(TokenType::LeftParen, "Expected '(' after function name.");
+    consume(TokenType::RightParen, "Function arguments are not supported yet.");
+    consume(TokenType::Semicolon, "Expected ';' after function call.");
+
+    return std::make_unique<FunctionCallStatement>(std::move(name));
+}
+
+std::unique_ptr<Stmt> Parser::functionDeclaration() {
+    std::string name = consume(
+        TokenType::Identifier,
+        "Expected function name after 'fn'."
+    ).lexeme;
+
+    consume(TokenType::LeftParen, "Expected '(' after function name.");
+
+    std::vector<Parameter> parameters;
+
+    if (!check(TokenType::RightParen)) {
+        do {
+            std::string parameterName = consume(
+                TokenType::Identifier,
+                "Expected parameter name."
+            ).lexeme;
+
+            consume(TokenType::Colon, "Expected ':' after parameter name.");
+
+            std::string parameterType = consume(
+                TokenType::Identifier,
+                "Expected parameter type after ':'."
+            ).lexeme;
+
+            parameters.emplace_back(
+                std::move(parameterName),
+                std::move(parameterType)
+            );
+        } while (match(TokenType::Comma));
+    }
+
+    consume(TokenType::RightParen, "Expected ')' after parameters.");
+
+    std::optional<std::string> returnType;
+
+    if (match(TokenType::Arrow)) {
+        returnType = consume(
+            TokenType::Identifier,
+            "Expected return type after '->'."
+        ).lexeme;
+    }
+
+    consume(TokenType::LeftBrace, "Expected '{' before function body.");
+
+    return std::make_unique<FunctionDeclaration>(
+        std::move(name),
+        std::move(parameters),
+        std::move(returnType),
+        blockStatement()
+    );
 }
 
 std::unique_ptr<Stmt> Parser::variableDeclaration() {
@@ -178,7 +248,7 @@ std::unique_ptr<Stmt> Parser::coutStatement() {
     return std::make_unique<CoutStatement>(std::move(value));
 }
 
-std::unique_ptr<Stmt> Parser::blockStatement() {
+std::unique_ptr<BlockStatement> Parser::blockStatement() {
     std::vector<std::unique_ptr<Stmt>> statements;
 
     while (!check(TokenType::RightBrace) && !isAtEnd()) {

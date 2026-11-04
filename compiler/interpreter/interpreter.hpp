@@ -11,6 +11,7 @@ namespace newlang {
 class Interpreter {
 private:
     std::unordered_map<std::string, int> environment;
+    std::unordered_map<std::string, const FunctionDeclaration*> functions;
 
 public:
     int evaluate(const Expr& expression);

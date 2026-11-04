@@ -351,6 +351,74 @@ int main() {
     }
 }
 
+{
+    std::string functionSource =
+        "fn add(left: i32, right: i32) -> i32 {"
+        "cout(left + right);"
+        "}"
+        "fn main() {}";
+
+    Lexer functionLexer(functionSource);
+    auto functionTokens = functionLexer.scanTokens();
+
+    Parser functionParser(functionTokens);
+    auto functionStatements = functionParser.parse();
+
+    assert(functionStatements.size() == 2);
+
+    auto* add = dynamic_cast<FunctionDeclaration*>(
+        functionStatements[0].get()
+    );
+
+    assert(add != nullptr);
+    assert(add->name == "add");
+    assert(add->parameters.size() == 2);
+    assert(add->parameters[0].name == "left");
+    assert(add->parameters[0].typeName == "i32");
+    assert(add->parameters[1].name == "right");
+    assert(add->parameters[1].typeName == "i32");
+    assert(add->returnType.has_value());
+    assert(*add->returnType == "i32");
+    assert(add->body->statements.size() == 1);
+    assert(dynamic_cast<CoutStatement*>(add->body->statements[0].get()) != nullptr);
+
+    auto* mainFunction = dynamic_cast<FunctionDeclaration*>(
+        functionStatements[1].get()
+    );
+
+    assert(mainFunction != nullptr);
+    assert(mainFunction->name == "main");
+    assert(mainFunction->parameters.empty());
+    assert(!mainFunction->returnType.has_value());
+    assert(mainFunction->body->statements.empty());
+}
+
+{
+    std::string callSource =
+        "fn greet() {}"
+        "fn main() { greet(); }";
+
+    Lexer callLexer(callSource);
+    auto callTokens = callLexer.scanTokens();
+
+    Parser callParser(callTokens);
+    auto callStatements = callParser.parse();
+
+    auto* mainFunction = dynamic_cast<FunctionDeclaration*>(
+        callStatements[1].get()
+    );
+
+    assert(mainFunction != nullptr);
+    assert(mainFunction->body->statements.size() == 1);
+
+    auto* call = dynamic_cast<FunctionCallStatement*>(
+        mainFunction->body->statements[0].get()
+    );
+
+    assert(call != nullptr);
+    assert(call->name == "greet");
+}
+
 std::cout << "All parser tests passed!\n";
 
 return 0;

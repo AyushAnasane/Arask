@@ -24,11 +24,13 @@ private:
     const Token& consume(TokenType type, const std::string& message);
 
     std::unique_ptr<Stmt> statement();
+    std::unique_ptr<Stmt> functionDeclaration();
     std::unique_ptr<Stmt> variableDeclaration();
     std::unique_ptr<Stmt> assignmentStatement();
+    std::unique_ptr<Stmt> functionCallStatement();
     std::unique_ptr<Stmt> incrementStatement();
     std::unique_ptr<Stmt> coutStatement();
-    std::unique_ptr<Stmt> blockStatement();
+    std::unique_ptr<BlockStatement> blockStatement();
     std::unique_ptr<Stmt> ifStatement();
     std::unique_ptr<Stmt> forStatement();
     std::unique_ptr<Stmt> rangeForStatement(

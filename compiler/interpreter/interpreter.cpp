@@ -57,6 +57,29 @@ int Interpreter::evaluate(const Expr& expression) {
 
 void Interpreter::execute(const Stmt& statement) {
 
+    if (dynamic_cast<const FunctionDeclaration*>(&statement)) {
+        // Function invocation is not implemented yet. A declaration only
+        // introduces program structure, so its body must not run at top level.
+        return;
+    }
+
+    if (const auto* call = dynamic_cast<const FunctionCallStatement*>(&statement)) {
+        auto function = functions.find(call->name);
+
+        if (function == functions.end()) {
+            throw std::runtime_error("Undefined function: " + call->name);
+        }
+
+        if (!function->second->parameters.empty()) {
+            throw std::runtime_error(
+                "Function parameters are not supported yet: " + call->name
+            );
+        }
+
+        execute(*function->second->body);
+        return;
+    }
+
     if (const auto* declaration =
         dynamic_cast<const VariableDeclaration*>(&statement)) {
 
@@ -185,6 +208,36 @@ if (const auto* range =
 void Interpreter::execute(
     const std::vector<std::unique_ptr<Stmt>>& statements
 ) {
+    functions.clear();
+    const FunctionDeclaration* mainFunction = nullptr;
+
+    for (const auto& statement : statements) {
+        const auto* function = dynamic_cast<const FunctionDeclaration*>(
+            statement.get()
+        );
+
+        if (function) {
+            if (!functions.emplace(function->name, function).second) {
+                throw std::runtime_error(
+                    "Program contains more than one function named '" +
+                    function->name + "'."
+                );
+            }
+
+            if (function->name == "main") {
+                mainFunction = function;
+            }
+        }
+    }
+
+    // A declared main function is the program's entry point. Until ordinary
+    // function calls are implemented, only main receives this special handling.
+    if (mainFunction) {
+        execute(*mainFunction->body);
+        return;
+    }
+
+    // Keep earlier script-style programs working when no main function exists.
     for (const auto& statement : statements) {
         execute(*statement);
     }

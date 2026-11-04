@@ -2,6 +2,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,11 +103,47 @@ struct CoutStatement : Stmt {
         : expression(std::move(expression)) {}
 };
 
+struct FunctionCallStatement : Stmt {
+    std::string name;
+
+    explicit FunctionCallStatement(std::string name)
+        : name(std::move(name)) {}
+};
+
 struct BlockStatement : Stmt {
     std::vector<std::unique_ptr<Stmt>> statements;
 
     explicit BlockStatement(std::vector<std::unique_ptr<Stmt>> statements)
         : statements(std::move(statements)) {}
+};
+
+// A parameter keeps the spelling of its declared type for the later type-checking
+// phase. Runtime parameter values are introduced when function calls are added.
+struct Parameter {
+    std::string name;
+    std::string typeName;
+
+    Parameter(std::string name, std::string typeName)
+        : name(std::move(name)),
+          typeName(std::move(typeName)) {}
+};
+
+struct FunctionDeclaration : Stmt {
+    std::string name;
+    std::vector<Parameter> parameters;
+    std::optional<std::string> returnType;
+    std::unique_ptr<BlockStatement> body;
+
+    FunctionDeclaration(
+        std::string name,
+        std::vector<Parameter> parameters,
+        std::optional<std::string> returnType,
+        std::unique_ptr<BlockStatement> body
+    )
+        : name(std::move(name)),
+          parameters(std::move(parameters)),
+          returnType(std::move(returnType)),
+          body(std::move(body)) {}
 };
 
 struct IfStatement : Stmt {

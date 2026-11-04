@@ -1,3 +1,37 @@
-for (let i = 0, j = 10; i < 5; i++, j--) {
-    cout(j);
+fn printHeader() {
+    cout(999);
+}
+
+fn printTotal() {
+    cout(total);
+}
+
+fn printFooter() {
+    cout(777);
+}
+
+fn main() {
+    printHeader();
+
+    let total = 0;
+
+    for (let row = 1; row <= 3; row++) {
+        for (let column = 1; column <= 4; column++) {
+            total = total + row * column;
+
+            if (column == 2) {
+                cout(row * 10 + column);
+            } else {
+                cout(row + column);
+            }
+        }
+    }
+
+    printTotal();
+
+    for (let number = 6, =0, 2) {
+        cout(number);
+    }
+
+    printFooter();
 }

@@ -101,6 +101,40 @@ int main() {
         assert(output == "0\n100\n2\n50\n4\n25\n6\n12\n8\n6\n");
     }
 
+    {
+        std::string output = runProgram(
+            "fn hidden() { cout(99); }"
+            "cout(1);"
+        );
+
+        assert(output == "1\n");
+    }
+
+    {
+        std::string output = runProgram(
+            "fn helper() { cout(99); }"
+            "fn main() {"
+            "cout(10);"
+            "for (let i = 0; i < 2; i++) { cout(i); }"
+            "}"
+            "cout(500);"
+        );
+
+        assert(output == "10\n0\n1\n");
+    }
+
+    {
+        std::string output = runProgram(
+            "fn main() {"
+            "greet();"
+            "cout(1);"
+            "}"
+            "fn greet() { cout(100); }"
+        );
+
+        assert(output == "100\n1\n");
+    }
+
     std::cout << "All interpreter tests passed!\n";
 
     return 0;
