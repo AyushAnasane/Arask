@@ -159,6 +159,40 @@ int main() {
         assert(output == "42\n");
     }
 
+    {
+        std::string output = runProgram(
+            "fn first() {"
+            "let x = 10;"
+            "cout(x);"
+            "}"
+            "fn second() {"
+            "let x = 20;"
+            "cout(x);"
+            "}"
+            "fn main() {"
+            "first();"
+            "second();"
+            "}"
+        );
+
+        assert(output == "10\n20\n");
+    }
+
+    {
+        std::string output = runProgram(
+            "fn show(value: i32) {"
+            "cout(value);"
+            "}"
+            "fn main() {"
+            "show(10);"
+            "show(20);"
+            "show(30);"
+            "}"
+        );
+
+        assert(output == "10\n20\n30\n");
+    }
+
     std::cerr << "All interpreter tests passed!\n";
 
     return 0;

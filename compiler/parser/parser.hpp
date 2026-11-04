@@ -28,6 +28,7 @@ private:
     std::unique_ptr<Stmt> variableDeclaration();
     std::unique_ptr<Stmt> assignmentStatement();
     std::unique_ptr<Stmt> functionCallStatement();
+    std::unique_ptr<Stmt> returnStatement();
     std::unique_ptr<Stmt> incrementStatement();
     std::unique_ptr<Stmt> coutStatement();
     std::unique_ptr<BlockStatement> blockStatement();

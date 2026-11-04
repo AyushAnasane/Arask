@@ -56,6 +56,7 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 std::unique_ptr<Stmt> Parser::statement() {
     if (match(TokenType::Fn)) return functionDeclaration();
     if (match(TokenType::Let)) return variableDeclaration();
+    if (match(TokenType::Return)) return returnStatement();
     if (match(TokenType::Cout)) return coutStatement();
     if (match(TokenType::For)) return forStatement();
     if (match(TokenType::If)) return ifStatement();
@@ -82,6 +83,19 @@ std::unique_ptr<Stmt> Parser::statement() {
     }
 
     throw std::runtime_error("Unexpected statement.");
+}
+
+std::unique_ptr<Stmt> Parser::returnStatement() {
+    auto value = expression();
+
+    consume(
+        TokenType::Semicolon,
+        "Expected ';' after return value."
+    );
+
+    return std::make_unique<ReturnStatement>(
+        std::move(value)
+    );
 }
 
 std::unique_ptr<Stmt> Parser::functionCallStatement() {

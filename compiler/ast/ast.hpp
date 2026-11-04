@@ -58,6 +58,13 @@ struct Stmt {
     virtual ~Stmt() = default;
 };
 
+struct ReturnStatement : Stmt {
+    std::unique_ptr<Expr> value;
+
+    explicit ReturnStatement(std::unique_ptr<Expr> value)
+        : value(std::move(value)) {}
+};
+
 struct VariableDeclaration : Stmt {
     std::string name;
     std::unique_ptr<Expr> initializer;
