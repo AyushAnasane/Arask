@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <cstdint>
@@ -6,6 +7,7 @@
 namespace newlang {
 
 using RuntimeValue = std::variant<
+    bool,
     std::int32_t,
     std::int64_t
 >;

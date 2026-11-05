@@ -54,35 +54,47 @@ std::vector<std::unique_ptr<Stmt>> Parser::parse() {
 }
 
 std::unique_ptr<Stmt> Parser::statement() {
-    if (match(TokenType::Fn)) return functionDeclaration();
-    if (match(TokenType::Let)) return variableDeclaration();
-    if (match(TokenType::Return)) return returnStatement();
-    if (match(TokenType::Cout)) return coutStatement();
-    if (match(TokenType::For)) return forStatement();
-    if (match(TokenType::If)) return ifStatement();
-    if (match(TokenType::LeftBrace)) return blockStatement();
+    Token start = peek();
+    std::unique_ptr<Stmt> stmt;
 
-    if (check(TokenType::Identifier)) {
+    if (match(TokenType::Fn)) {
+        stmt = functionDeclaration();
+    } else if (match(TokenType::Let)) {
+        stmt = variableDeclaration();
+    } else if (match(TokenType::Return)) {
+        stmt = returnStatement();
+    } else if (match(TokenType::Cout)) {
+        stmt = coutStatement();
+    } else if (match(TokenType::For)) {
+        stmt = forStatement();
+    } else if (match(TokenType::If)) {
+        stmt = ifStatement();
+    } else if (match(TokenType::LeftBrace)) {
+        stmt = blockStatement();
+    } else if (check(TokenType::Identifier)) {
         if (current + 1 < tokens.size()) {
             if (tokens[current + 1].type == TokenType::LeftParen) {
-                return functionCallStatement();
-            }
-
-            if (tokens[current + 1].type == TokenType::PlusPlus) {
-                return incrementStatement();
-            }
-
-            if (tokens[current + 1].type == TokenType::MinusMinus) {
-                return decrementStatement();
-            }
-
-            if (tokens[current + 1].type == TokenType::Equal) {
-                return assignmentStatement();
+                stmt = functionCallStatement();
+            } else if (tokens[current + 1].type == TokenType::PlusPlus) {
+                stmt = incrementStatement();
+            } else if (tokens[current + 1].type == TokenType::MinusMinus) {
+                stmt = decrementStatement();
+            } else if (tokens[current + 1].type == TokenType::Equal) {
+                stmt = assignmentStatement();
             }
         }
     }
 
-    throw std::runtime_error("Unexpected statement.");
+    if (!stmt) {
+        throw std::runtime_error("Unexpected statement.");
+    }
+
+    stmt->location = {
+        static_cast<std::size_t>(start.line),
+        static_cast<std::size_t>(start.column)
+    };
+
+    return stmt;
 }
 
 std::unique_ptr<Stmt> Parser::returnStatement() {
@@ -103,10 +115,12 @@ std::unique_ptr<Stmt> Parser::returnStatement() {
 }
 
 std::unique_ptr<Stmt> Parser::functionCallStatement() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected function name."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     consume(TokenType::LeftParen, "Expected '(' after function name.");
 
@@ -121,17 +135,28 @@ std::unique_ptr<Stmt> Parser::functionCallStatement() {
     consume(TokenType::RightParen, "Expected ')' after function arguments.");
     consume(TokenType::Semicolon, "Expected ';' after function call.");
 
-    return std::make_unique<FunctionCallStatement>(
+    auto statement = std::make_unique<FunctionCallStatement>(
         std::move(name),
         std::move(arguments)
     );
+
+    statement->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
+
+    return statement;
 }
 
 std::unique_ptr<Stmt> Parser::functionDeclaration() {
-    std::string name = consume(
+    Token functionToken = previous();
+
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected function name after 'fn'."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     consume(TokenType::LeftParen, "Expected '(' after function name.");
 
@@ -139,10 +164,12 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
 
     if (!check(TokenType::RightParen)) {
         do {
-            std::string parameterName = consume(
+            Token parameterToken = consume(
                 TokenType::Identifier,
                 "Expected parameter name."
-            ).lexeme;
+            );
+
+            std::string parameterName = parameterToken.lexeme;
 
             consume(TokenType::Colon, "Expected ':' after parameter name.");
 
@@ -153,7 +180,11 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
 
             parameters.emplace_back(
                 std::move(parameterName),
-                std::move(parameterType)
+                std::move(parameterType),
+                SourceLocation{
+                    static_cast<std::size_t>(parameterToken.line),
+                    static_cast<std::size_t>(parameterToken.column)
+                }
             );
         } while (match(TokenType::Comma));
     }
@@ -171,20 +202,29 @@ std::unique_ptr<Stmt> Parser::functionDeclaration() {
 
     consume(TokenType::LeftBrace, "Expected '{' before function body.");
 
-    return std::make_unique<FunctionDeclaration>(
+    auto function = std::make_unique<FunctionDeclaration>(
         std::move(name),
         std::move(parameters),
         std::move(returnType),
         blockStatement()
     );
+
+    function->location = {
+        static_cast<std::size_t>(functionToken.line),
+        static_cast<std::size_t>(functionToken.column)
+    };
+
+    return function;
 }
 
 
 std::unique_ptr<Stmt> Parser::variableDeclaration() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected variable name."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     std::optional<std::string> typeName;
 
@@ -201,19 +241,28 @@ std::unique_ptr<Stmt> Parser::variableDeclaration() {
 
     consume(TokenType::Semicolon, "Expected ';' after variable declaration.");
 
-    return std::make_unique<VariableDeclaration>(
-        name,
+    auto declaration = std::make_unique<VariableDeclaration>(
+        std::move(name),
         std::move(initializer),
         std::move(typeName)
     );
+
+    declaration->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
+
+    return declaration;
 }
 
 
 std::unique_ptr<Stmt> Parser::assignmentStatement() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected variable name."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     consume(TokenType::Equal, "Expected '=' in assignment.");
 
@@ -221,65 +270,103 @@ std::unique_ptr<Stmt> Parser::assignmentStatement() {
 
     consume(TokenType::Semicolon, "Expected ';' after assignment.");
 
-    return std::make_unique<AssignmentStatement>(
-        name,
+    auto assignment = std::make_unique<AssignmentStatement>(
+        std::move(name),
         std::move(value)
     );
+
+    assignment->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
+
+    return assignment;
 }
 
 std::unique_ptr<Stmt> Parser::incrementStatement() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected variable name."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     consume(TokenType::PlusPlus, "Expected '++'.");
 
     consume(TokenType::Semicolon, "Expected ';' after increment.");
 
-    return std::make_unique<IncrementStatement>(name);
+    auto increment = std::make_unique<IncrementStatement>(
+        std::move(name)
+    );
+
+    increment->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
+
+    return increment;
 }
 
 std::unique_ptr<Stmt> Parser::decrementStatement() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected variable name."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
 
     consume(TokenType::MinusMinus, "Expected '--'.");
 
     consume(TokenType::Semicolon, "Expected ';' after decrement.");
 
-    return std::make_unique<DecrementStatement>(name);
+    auto statement = std::make_unique<DecrementStatement>(
+        std::move(name)
+    );
+
+    statement->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
+
+    return statement;
 }
 
 std::unique_ptr<Stmt> Parser::updateExpression() {
-    std::string name = consume(
+    Token nameToken = consume(
         TokenType::Identifier,
         "Expected variable name in loop update."
-    ).lexeme;
+    );
+
+    std::string name = nameToken.lexeme;
+    std::unique_ptr<Stmt> update;
 
     if (match(TokenType::PlusPlus)) {
-        return std::make_unique<IncrementStatement>(name);
-    }
-
-    if (match(TokenType::MinusMinus)) {
-        return std::make_unique<DecrementStatement>(name);
-    }
-
-    if (match(TokenType::Equal)) {
+        update = std::make_unique<IncrementStatement>(name);
+    } else if (match(TokenType::MinusMinus)) {
+        update = std::make_unique<DecrementStatement>(name);
+    } else if (match(TokenType::Equal)) {
         auto value = expression();
 
-        return std::make_unique<AssignmentStatement>(
+        update = std::make_unique<AssignmentStatement>(
             name,
             std::move(value)
         );
+    } else {
+        throw std::runtime_error(
+            "Expected ++, --, or '=' in loop update."
+        );
     }
 
-    throw std::runtime_error("Expected ++, --, or '=' in loop update.");
-}
+    update->location = {
+        static_cast<std::size_t>(nameToken.line),
+        static_cast<std::size_t>(nameToken.column)
+    };
 
+    return update;
+}
 std::unique_ptr<Stmt> Parser::coutStatement() {
+    Token coutToken = previous();
+
     consume(TokenType::LeftParen, "Expected '(' after cout.");
 
     auto value = expression();
@@ -287,10 +374,19 @@ std::unique_ptr<Stmt> Parser::coutStatement() {
     consume(TokenType::RightParen, "Expected ')' after cout expression.");
     consume(TokenType::Semicolon, "Expected ';' after cout.");
 
-    return std::make_unique<CoutStatement>(std::move(value));
+    auto statement = std::make_unique<CoutStatement>(std::move(value));
+
+    statement->location = {
+        static_cast<std::size_t>(coutToken.line),
+        static_cast<std::size_t>(coutToken.column)
+    };
+
+    return statement;
 }
 
 std::unique_ptr<BlockStatement> Parser::blockStatement() {
+    Token braceToken = previous();
+
     std::vector<std::unique_ptr<Stmt>> statements;
 
     while (!check(TokenType::RightBrace) && !isAtEnd()) {
@@ -299,10 +395,21 @@ std::unique_ptr<BlockStatement> Parser::blockStatement() {
 
     consume(TokenType::RightBrace, "Expected '}' after block.");
 
-    return std::make_unique<BlockStatement>(std::move(statements));
+    auto block = std::make_unique<BlockStatement>(
+        std::move(statements)
+    );
+
+    block->location = {
+        static_cast<std::size_t>(braceToken.line),
+        static_cast<std::size_t>(braceToken.column)
+    };
+
+    return block;
 }
 
 std::unique_ptr<Stmt> Parser::ifStatement() {
+    Token ifToken = previous();
+
     consume(TokenType::LeftParen, "Expected '(' after if.");
 
     auto condition = expression();
@@ -319,21 +426,32 @@ std::unique_ptr<Stmt> Parser::ifStatement() {
         elseBranch = blockStatement();
     }
 
-    return std::make_unique<IfStatement>(
+    auto statement = std::make_unique<IfStatement>(
         std::move(condition),
         std::move(thenBranch),
         std::move(elseBranch)
     );
+
+    statement->location = {
+        static_cast<std::size_t>(ifToken.line),
+        static_cast<std::size_t>(ifToken.column)
+    };
+
+    return statement;
 }
 
 std::unique_ptr<Stmt> Parser::forStatement() {
+    Token forToken = previous();
+
     consume(TokenType::LeftParen, "Expected '(' after for.");
     consume(TokenType::Let, "Expected 'let' in for loop.");
 
-    std::string variable = consume(
+    Token variableToken = consume(
         TokenType::Identifier,
         "Expected loop variable."
-    ).lexeme;
+    );
+
+    std::string variable = variableToken.lexeme;
 
     consume(TokenType::Equal, "Expected '=' after loop variable.");
 
@@ -346,40 +464,61 @@ std::unique_ptr<Stmt> Parser::forStatement() {
             tokens[current + 1].type == TokenType::Equal;
 
         if (!multipleInitializers) {
-            return rangeForStatement(
+            auto range = rangeForStatement(
                 std::move(variable),
                 std::move(start)
             );
+
+            range->location = {
+                static_cast<std::size_t>(forToken.line),
+                static_cast<std::size_t>(forToken.column)
+            };
+
+            return range;
         }
     }
 
     std::vector<std::unique_ptr<Stmt>> initializers;
 
-    initializers.push_back(
-        std::make_unique<VariableDeclaration>(
-            variable,
-            std::move(start)
-        )
+    auto firstInitializer = std::make_unique<VariableDeclaration>(
+        variable,
+        std::move(start)
     );
 
+    firstInitializer->location = {
+        static_cast<std::size_t>(variableToken.line),
+        static_cast<std::size_t>(variableToken.column)
+    };
+
+    initializers.push_back(std::move(firstInitializer));
+
     while (previous().type == TokenType::Comma) {
-        std::string name = consume(
+        Token nameToken = consume(
             TokenType::Identifier,
             "Expected variable name in loop initializer."
-        ).lexeme;
+        );
+
+        std::string name = nameToken.lexeme;
 
         consume(TokenType::Equal, "Expected '=' after variable name.");
 
         auto value = expression();
 
-        initializers.push_back(
-            std::make_unique<VariableDeclaration>(
-                name,
-                std::move(value)
-            )
+        auto initializer = std::make_unique<VariableDeclaration>(
+            name,
+            std::move(value)
         );
 
-        if (!match(TokenType::Comma)) break;
+        initializer->location = {
+            static_cast<std::size_t>(nameToken.line),
+            static_cast<std::size_t>(nameToken.column)
+        };
+
+        initializers.push_back(std::move(initializer));
+
+        if (!match(TokenType::Comma)) {
+            break;
+        }
     }
 
     consume(TokenType::Semicolon, "Expected ';' after loop initializer.");
@@ -401,18 +540,27 @@ std::unique_ptr<Stmt> Parser::forStatement() {
 
     auto body = blockStatement();
 
-    return std::make_unique<ForStatement>(
+    auto statement = std::make_unique<ForStatement>(
         std::move(initializers),
         std::move(condition),
         std::move(increments),
         std::move(body)
     );
+
+    statement->location = {
+        static_cast<std::size_t>(forToken.line),
+        static_cast<std::size_t>(forToken.column)
+    };
+
+    return statement;
 }
 
 std::unique_ptr<Stmt> Parser::rangeForStatement(
     std::string variable,
     std::unique_ptr<Expr> start
 ) {
+    SourceLocation location = start->location;
+
     bool inclusive = match(TokenType::Equal);
 
     auto end = expression();
@@ -428,14 +576,18 @@ std::unique_ptr<Stmt> Parser::rangeForStatement(
 
     auto body = blockStatement();
 
-    return std::make_unique<RangeForStatement>(
-        variable,
+    auto statement = std::make_unique<RangeForStatement>(
+        std::move(variable),
         std::move(start),
         std::move(end),
         std::move(step),
         inclusive,
         std::move(body)
     );
+
+    statement->location = location;
+
+    return statement;
 }
 
 std::unique_ptr<Expr> Parser::expression() {
@@ -446,14 +598,22 @@ std::unique_ptr<Expr> Parser::equality() {
     auto expr = comparison();
 
     while (match(TokenType::EqualEqual) || match(TokenType::BangEqual)) {
-        std::string op = previous().lexeme;
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
         auto right = comparison();
 
-        expr = std::make_unique<BinaryExpr>(
+        auto binary = std::make_unique<BinaryExpr>(
             std::move(expr),
             op,
             std::move(right)
         );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
     }
 
     return expr;
@@ -468,31 +628,46 @@ std::unique_ptr<Expr> Parser::comparison() {
         match(TokenType::Less) ||
         match(TokenType::LessEqual)
     ) {
-        std::string op = previous().lexeme;
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
         auto right = term();
 
-        expr = std::make_unique<BinaryExpr>(
+        auto binary = std::make_unique<BinaryExpr>(
             std::move(expr),
             op,
             std::move(right)
         );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
     }
 
     return expr;
 }
-
 std::unique_ptr<Expr> Parser::term() {
     auto expr = factor();
 
     while (match(TokenType::Plus) || match(TokenType::Minus)) {
-        std::string op = previous().lexeme;
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
         auto right = factor();
 
-        expr = std::make_unique<BinaryExpr>(
+        auto binary = std::make_unique<BinaryExpr>(
             std::move(expr),
             op,
             std::move(right)
         );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
     }
 
     return expr;
@@ -502,14 +677,22 @@ std::unique_ptr<Expr> Parser::factor() {
     auto expr = unary();
 
     while (match(TokenType::Star) || match(TokenType::Slash)) {
-        std::string op = previous().lexeme;
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
         auto right = unary();
 
-        expr = std::make_unique<BinaryExpr>(
+        auto binary = std::make_unique<BinaryExpr>(
             std::move(expr),
             op,
             std::move(right)
         );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
     }
 
     return expr;
@@ -517,28 +700,61 @@ std::unique_ptr<Expr> Parser::factor() {
 
 std::unique_ptr<Expr> Parser::unary() {
     if (match(TokenType::Minus) || match(TokenType::Plus)) {
-        std::string op = previous().lexeme;
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
         auto right = unary();
 
-        return std::make_unique<UnaryExpr>(
+        auto unary = std::make_unique<UnaryExpr>(
             op,
             std::move(right)
         );
+
+        unary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        return unary;
     }
 
     return primary();
 }
 
 
+
 std::unique_ptr<Expr> Parser::primary() {
+    if (match(TokenType::True)) {
+        auto expr = std::make_unique<BooleanExpr>(true);
+        expr->location = {
+            static_cast<std::size_t>(previous().line),
+            static_cast<std::size_t>(previous().column)
+        };
+        return expr;
+    }
+
+    if (match(TokenType::False)) {
+        auto expr = std::make_unique<BooleanExpr>(false);
+        expr->location = {
+            static_cast<std::size_t>(previous().line),
+            static_cast<std::size_t>(previous().column)
+        };
+        return expr;
+    }
+
     if (match(TokenType::Number)) {
-        return std::make_unique<NumberExpr>(
+        auto expr = std::make_unique<NumberExpr>(
             std::stoll(previous().lexeme)
         );
+        expr->location = {
+            static_cast<std::size_t>(previous().line),
+            static_cast<std::size_t>(previous().column)
+        };
+        return expr;
     }
 
     if (match(TokenType::Identifier)) {
-        std::string name = previous().lexeme;
+        Token token = previous();
+        std::string name = token.lexeme;
 
         if (match(TokenType::LeftParen)) {
             std::vector<std::unique_ptr<Expr>> arguments;
@@ -554,13 +770,26 @@ std::unique_ptr<Expr> Parser::primary() {
                 "Expected ')' after function arguments."
             );
 
-            return std::make_unique<CallExpr>(
+            auto expr = std::make_unique<CallExpr>(
                 std::move(name),
                 std::move(arguments)
             );
+
+            expr->location = {
+                static_cast<std::size_t>(token.line),
+                static_cast<std::size_t>(token.column)
+            };
+
+            return expr;
         }
 
-        return std::make_unique<VariableExpr>(std::move(name));
+        auto expr = std::make_unique<VariableExpr>(std::move(name));
+        expr->location = {
+            static_cast<std::size_t>(token.line),
+            static_cast<std::size_t>(token.column)
+        };
+
+        return expr;
     }
 
     if (match(TokenType::LeftParen)) {

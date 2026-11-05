@@ -7,6 +7,24 @@
 
 namespace newlang {
 
+    namespace {
+
+        [[noreturn]] void throwSemanticError(
+            const SourceLocation& location,
+            const std::string& message
+        ) {
+            throw std::runtime_error(
+                "Semantic error at line " +
+                std::to_string(location.line) +
+                ", column " +
+                std::to_string(location.column) +
+                ": " +
+                message
+            );
+        }
+
+        }
+
 SemanticAnalyzer::SemanticAnalyzer() = default;
 
 void SemanticAnalyzer::beginScope() {
@@ -34,7 +52,8 @@ void SemanticAnalyzer::analyze(
             dynamic_cast<const FunctionDeclaration*>(statement.get())) {
 
             if (!functions.emplace(function->name, function).second) {
-                throw std::runtime_error(
+                throwSemanticError(
+                    statement->location,
                     "Duplicate function: " + function->name
                 );
             }
@@ -48,6 +67,8 @@ void SemanticAnalyzer::analyze(
         }
     }
 }
+
+
 
 void SemanticAnalyzer::analyzeFunction(
     const FunctionDeclaration& function
@@ -67,8 +88,10 @@ void SemanticAnalyzer::analyzeFunction(
 
         if (currentReturnType &&
             *currentReturnType != "i32" &&
-            *currentReturnType != "i64") {
-            throw std::runtime_error(
+            *currentReturnType != "i64" &&
+            *currentReturnType != "bool") {
+            throwSemanticError(
+                function.location,
                 "Unsupported return type '" + *currentReturnType +
                 "' in function '" + currentFunctionName + "'."
             );
@@ -81,15 +104,17 @@ void SemanticAnalyzer::analyzeFunction(
                 type = "i32";
             }
 
-            if (type != "i32" && type != "i64") {
-                throw std::runtime_error(
+            if (type != "i32" && type != "i64" && type != "bool") {
+                throwSemanticError(
+                    parameter.location,
                     "Unsupported parameter type '" + type +
                     "' in function '" + function.name + "'."
                 );
             }
 
             if (!scopes.back().emplace(parameter.name, type).second) {
-                throw std::runtime_error(
+                throwSemanticError(
+                    parameter.location,
                     "Duplicate parameter: " + parameter.name
                 );
             }
@@ -98,7 +123,8 @@ void SemanticAnalyzer::analyzeFunction(
         analyzeStatement(*function.body);
 
         if (currentReturnType && !alwaysReturns(*function.body)) {
-            throw std::runtime_error(
+            throwSemanticError(
+                function.location,
                 "Not all control-flow paths return a value in function '" +
                 currentFunctionName + "'."
             );
@@ -113,9 +139,17 @@ void SemanticAnalyzer::analyzeFunction(
     currentReturnType.swap(previousReturnType);
 }
 
+
+
+
+
 std::string SemanticAnalyzer::analyzeExpression(
     const Expr& expression
 ) {
+    if (dynamic_cast<const BooleanExpr*>(&expression)) {
+        return "bool";
+    }
+
     if (const auto* number =
         dynamic_cast<const NumberExpr*>(&expression)) {
 
@@ -138,7 +172,8 @@ std::string SemanticAnalyzer::analyzeExpression(
             }
         }
 
-        throw std::runtime_error(
+        throwSemanticError(
+            expression.location,
             "Undefined variable: " + variable->name
         );
     }
@@ -149,7 +184,17 @@ std::string SemanticAnalyzer::analyzeExpression(
         std::string type = analyzeExpression(*unary->right);
 
         if (type != "i32" && type != "i64") {
-            throw std::runtime_error("Invalid unary operand type.");
+            throwSemanticError(
+                expression.location,
+                "Invalid unary operand type."
+            );
+        }
+
+        if (unary->op != "+" && unary->op != "-") {
+            throwSemanticError(
+                expression.location,
+                "Unsupported unary operator: " + unary->op
+            );
         }
 
         return type;
@@ -162,23 +207,51 @@ std::string SemanticAnalyzer::analyzeExpression(
         std::string right = analyzeExpression(*binary->right);
 
         if (left != right) {
-            throw std::runtime_error(
+            throwSemanticError(
+                expression.location,
                 "Type mismatch in binary expression."
             );
         }
 
-        if (
-            binary->op == "==" ||
-            binary->op == "!=" ||
-            binary->op == "<" ||
-            binary->op == "<=" ||
-            binary->op == ">" ||
-            binary->op == ">="
-        ) {
+        const std::string& op = binary->op;
+
+        if (op == "==" || op == "!=") {
+            if (left != "i32" && left != "i64" && left != "bool") {
+                throwSemanticError(
+                    expression.location,
+                    "Invalid equality operand type."
+                );
+            }
+
             return "bool";
         }
 
-        return left;
+        if (op == "<" || op == "<=" || op == ">" || op == ">=") {
+            if (left != "i32" && left != "i64") {
+                throwSemanticError(
+                    expression.location,
+                    "Ordering comparisons require numeric operands."
+                );
+            }
+
+            return "bool";
+        }
+
+        if (op == "+" || op == "-" || op == "*" || op == "/") {
+            if (left != "i32" && left != "i64") {
+                throwSemanticError(
+                    expression.location,
+                    "Arithmetic operators require numeric operands."
+                );
+            }
+
+            return left;
+        }
+
+        throwSemanticError(
+            expression.location,
+            "Unsupported binary operator: " + op
+        );
     }
 
     if (const auto* call =
@@ -187,7 +260,8 @@ std::string SemanticAnalyzer::analyzeExpression(
         auto function = functions.find(call->name);
 
         if (function == functions.end()) {
-            throw std::runtime_error(
+            throwSemanticError(
+                expression.location,
                 "Undefined function: " + call->name
             );
         }
@@ -195,7 +269,8 @@ std::string SemanticAnalyzer::analyzeExpression(
         const auto& declaration = *function->second;
 
         if (call->arguments.size() != declaration.parameters.size()) {
-            throw std::runtime_error(
+            throwSemanticError(
+                expression.location,
                 "Incorrect argument count for function: " + call->name
             );
         }
@@ -209,46 +284,63 @@ std::string SemanticAnalyzer::analyzeExpression(
             }
 
             if (actual != expected) {
-                throw std::runtime_error(
+                throwSemanticError(
+                    call->arguments[i]->location,
                     "Type mismatch in argument " + std::to_string(i + 1) +
                     " of function '" + call->name + "'."
                 );
             }
         }
 
-        return declaration.returnType.value_or("void");
+        std::string returnType = declaration.returnType.value_or("void");
+
+        if (returnType == "int") {
+            returnType = "i32";
+        }
+
+        return returnType;
     }
 
-    throw std::runtime_error("Unsupported expression in semantic analysis.");
+    throwSemanticError(
+        expression.location,
+        "Unsupported expression in semantic analysis."
+    );
 }
+
+
+
+
+
 
 void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
     if (const auto* declaration =
         dynamic_cast<const VariableDeclaration*>(&statement)) {
 
         std::string actual = analyzeExpression(*declaration->initializer);
-
         std::string type = declaration->typeName.value_or(actual);
 
         if (type == "int") {
             type = "i32";
         }
 
-        if (type != "i32" && type != "i64") {
-            throw std::runtime_error(
+        if (type != "i32" && type != "i64" && type != "bool") {
+            throwSemanticError(
+                statement.location,
                 "Unsupported variable type: " + type
             );
         }
 
         if (actual != type) {
-            throw std::runtime_error(
+            throwSemanticError(
+                declaration->initializer->location,
                 "Type mismatch in variable declaration: " +
                 declaration->name
             );
         }
 
         if (!scopes.back().emplace(declaration->name, type).second) {
-            throw std::runtime_error(
+            throwSemanticError(
+                statement.location,
                 "Duplicate variable: " + declaration->name
             );
         }
@@ -266,7 +358,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
 
             if (found != it->end()) {
                 if (found->second != actual) {
-                    throw std::runtime_error(
+                    throwSemanticError(
+                        assignment->value->location,
                         "Type mismatch in assignment: " + assignment->name
                     );
                 }
@@ -275,7 +368,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
             }
         }
 
-        throw std::runtime_error(
+        throwSemanticError(
+            statement.location,
             "Undefined variable: " + assignment->name
         );
     }
@@ -283,14 +377,36 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
     if (const auto* increment =
         dynamic_cast<const IncrementStatement*>(&statement)) {
 
-        analyzeExpression(VariableExpr(increment->name));
+        VariableExpr variable(increment->name);
+        variable.location = statement.location;
+
+        std::string type = analyzeExpression(variable);
+
+        if (type != "i32" && type != "i64") {
+            throwSemanticError(
+                statement.location,
+                "Invalid increment operand type."
+            );
+        }
+
         return;
     }
 
     if (const auto* decrement =
         dynamic_cast<const DecrementStatement*>(&statement)) {
 
-        analyzeExpression(VariableExpr(decrement->name));
+        VariableExpr variable(decrement->name);
+        variable.location = statement.location;
+
+        std::string type = analyzeExpression(variable);
+
+        if (type != "i32" && type != "i64") {
+            throwSemanticError(
+                statement.location,
+                "Invalid decrement operand type."
+            );
+        }
+
         return;
     }
 
@@ -307,13 +423,15 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         auto function = functions.find(call->name);
 
         if (function == functions.end()) {
-            throw std::runtime_error(
+            throwSemanticError(
+                statement.location,
                 "Undefined function: " + call->name
             );
         }
 
         if (call->arguments.size() != function->second->parameters.size()) {
-            throw std::runtime_error(
+            throwSemanticError(
+                statement.location,
                 "Incorrect argument count for function: " + call->name
             );
         }
@@ -327,7 +445,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
             }
 
             if (actual != expected) {
-                throw std::runtime_error(
+                throwSemanticError(
+                    call->arguments[i]->location,
                     "Type mismatch in function call: " + call->name
                 );
             }
@@ -341,9 +460,10 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
 
         ScopeGuard scope(*this);
 
-        for (const auto& statement : block->statements) {
-            analyzeStatement(*statement);
+        for (const auto& child : block->statements) {
+            analyzeStatement(*child);
         }
+
         return;
     }
 
@@ -356,7 +476,10 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         if (condition != "bool" &&
             condition != "i32" &&
             condition != "i64") {
-            throw std::runtime_error("Invalid if condition.");
+            throwSemanticError(
+                ifStatement->condition->location,
+                "Invalid if condition."
+            );
         }
 
         analyzeStatement(*ifStatement->thenBranch);
@@ -373,7 +496,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
 
         if (!returnStatement->value) {
             if (currentReturnType) {
-                throw std::runtime_error(
+                throwSemanticError(
+                    statement.location,
                     "Function '" + currentFunctionName +
                     "' must return a value of type " + *currentReturnType + "."
                 );
@@ -383,7 +507,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         }
 
         if (!currentReturnType) {
-            throw std::runtime_error(
+            throwSemanticError(
+                statement.location,
                 "Function '" + currentFunctionName +
                 "' cannot return a value because it has no declared return type."
             );
@@ -392,7 +517,8 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         std::string actual = analyzeExpression(*returnStatement->value);
 
         if (actual != *currentReturnType) {
-            throw std::runtime_error(
+            throwSemanticError(
+                returnStatement->value->location,
                 "Return type mismatch in function '" + currentFunctionName +
                 "': expected " + *currentReturnType +
                 ", got " + actual + "."
@@ -401,8 +527,6 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
 
         return;
     }
-
-
 
     if (const auto* forStatement =
         dynamic_cast<const ForStatement*>(&statement)) {
@@ -413,7 +537,17 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
             analyzeStatement(*initializer);
         }
 
-        analyzeExpression(*forStatement->condition);
+        std::string condition =
+            analyzeExpression(*forStatement->condition);
+
+        if (condition != "bool" &&
+            condition != "i32" &&
+            condition != "i64") {
+            throwSemanticError(
+                forStatement->condition->location,
+                "Invalid for loop condition."
+            );
+        }
 
         for (const auto& increment : forStatement->increments) {
             analyzeStatement(*increment);
@@ -431,17 +565,42 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         std::string start = analyzeExpression(*range->start);
         std::string end = analyzeExpression(*range->end);
 
-        if (start != end) {
-            throw std::runtime_error("Range type mismatch.");
+        if (start != "i32" && start != "i64") {
+            throwSemanticError(
+                range->start->location,
+                "Range boundaries must be integers."
+            );
         }
 
-        scopes.back()[range->variable] = start;
+        if (start != end) {
+            throwSemanticError(
+                range->end->location,
+                "Range type mismatch."
+            );
+        }
+
+        if (!scopes.back().emplace(range->variable, start).second) {
+            throwSemanticError(
+                statement.location,
+                "Duplicate range variable: " + range->variable
+            );
+        }
 
         if (range->step) {
             std::string step = analyzeExpression(*range->step);
 
+            if (step != "i32" && step != "i64") {
+                throwSemanticError(
+                    range->step->location,
+                    "Range step must be an integer."
+                );
+            }
+
             if (step != start) {
-                throw std::runtime_error("Range step type mismatch.");
+                throwSemanticError(
+                    range->step->location,
+                    "Range step type mismatch."
+                );
             }
         }
 
@@ -449,8 +608,14 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         return;
     }
 
-    throw std::runtime_error("Unsupported statement in semantic analysis.");
+    throwSemanticError(
+        statement.location,
+        "Unsupported statement in semantic analysis."
+    );
 }
+
+
+
 bool SemanticAnalyzer::alwaysReturns(const Stmt& statement) {
     if (dynamic_cast<const ReturnStatement*>(&statement)) {
         return true;

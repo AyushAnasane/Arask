@@ -317,6 +317,95 @@ std::cerr << "Test 16: Recursive factorial\n";
     assert(output == "100\n1\n");
 }
 
+    std::cerr << "Test 17: Boolean literals\n";
+        {
+            std::string output = runProgram(
+                "fn main() {"
+                "cout(true);"
+                "cout(false);"
+                "}"
+            );
+
+            assert(output == "true\nfalse\n");
+        }
+
+        std::cerr << "Test 18: Boolean variables and assignment\n";
+            {
+                std::string output = runProgram(
+                    "fn main() {"
+                    "let isReady: bool = true;"
+                    "cout(isReady);"
+                    "isReady = false;"
+                    "cout(isReady);"
+                    "}"
+                );
+
+                assert(output == "true\nfalse\n");
+            }
+
+            std::cerr << "Test 19: Boolean conditions\n";
+    {
+    std::string output = runProgram(
+            "fn main() {"
+            "let isReady: bool = true;"
+            "if (isReady) {"
+            "cout(1);"
+            "}"
+            "isReady = false;"
+            "if (isReady) {"
+            "cout(2);"
+            "}"
+            "}"
+        );
+
+        assert(output == "1\n");
+    }
+
+    std::cerr << "Test 20: Boolean function parameters\n";
+    {
+        std::string output = runProgram(
+            "fn showStatus(status: bool) {"
+            "if (status) {"
+            "cout(true);"
+            "}"
+            "}"
+            "fn main() {"
+            "showStatus(true);"
+            "showStatus(false);"
+            "}"
+        );
+
+        assert(output == "true\n");
+    }
+
+    std::cerr << "Test 21: Boolean function return values\n";
+        {
+            std::string output = runProgram(
+                "fn isReady() -> bool {"
+                "return true;"
+                "}"
+                "fn main() {"
+                "let result: bool = isReady();"
+                "cout(result);"
+                "}"
+            );
+
+            assert(output == "true\n");
+        }
+
+        std::cerr << "Test 22: Boolean equality\n";
+            {
+                std::string output = runProgram(
+                    "fn main() {"
+                    "cout(true == false);"
+                    "cout(true == true);"
+                    "cout(false != true);"
+                    "}"
+                );
+
+                assert(output == "false\ntrue\ntrue\n");
+            }
+
     std::cerr << "All interpreter tests passed!\n";
 
     return 0;

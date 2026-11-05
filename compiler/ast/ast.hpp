@@ -6,10 +6,18 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstdint>
 
 namespace newlang {
 
+struct SourceLocation {
+    std::size_t line = 1;
+    std::size_t column = 1;
+};
+
 struct Expr {
+    SourceLocation location;
+
     virtual ~Expr() = default;
 };
 
@@ -17,6 +25,13 @@ struct NumberExpr : Expr {
     std::int64_t value;
 
     explicit NumberExpr(std::int64_t value)
+        : value(value) {}
+};
+
+struct BooleanExpr : Expr {
+    bool value;
+
+    explicit BooleanExpr(bool value)
         : value(value) {}
 };
 
@@ -70,6 +85,8 @@ struct UnaryExpr : Expr {
 };
 
 struct Stmt {
+    SourceLocation location;
+
     virtual ~Stmt() = default;
 };
 
@@ -148,15 +165,19 @@ struct BlockStatement : Stmt {
         : statements(std::move(statements)) {}
 };
 
-// A parameter keeps the spelling of its declared type for the later type-checking
-// phase. Runtime parameter values are introduced when function calls are added.
 struct Parameter {
     std::string name;
     std::string typeName;
+    SourceLocation location;
 
-    Parameter(std::string name, std::string typeName)
+    Parameter(
+        std::string name,
+        std::string typeName,
+        SourceLocation location = {}
+    )
         : name(std::move(name)),
-          typeName(std::move(typeName)) {}
+          typeName(std::move(typeName)),
+          location(location) {}
 };
 
 struct FunctionDeclaration : Stmt {
