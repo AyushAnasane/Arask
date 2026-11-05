@@ -7,9 +7,7 @@
 
 namespace newlang {
 
-SemanticAnalyzer::SemanticAnalyzer() {
-    beginScope();
-}
+SemanticAnalyzer::SemanticAnalyzer() = default;
 
 void SemanticAnalyzer::beginScope() {
     scopes.emplace_back();
@@ -26,8 +24,10 @@ void SemanticAnalyzer::analyze(
 ) {
     scopes.clear();
     functions.clear();
+    currentFunctionName.clear();
+    currentReturnType.reset();
 
-    beginScope();
+    ScopeGuard globalScope(*this);
 
     for (const auto& statement : statements) {
         if (const auto* function =
@@ -52,32 +52,65 @@ void SemanticAnalyzer::analyze(
 void SemanticAnalyzer::analyzeFunction(
     const FunctionDeclaration& function
 ) {
-    beginScope();
+    ScopeGuard functionScope(*this);
 
-    for (const auto& parameter : function.parameters) {
-        std::string type = parameter.typeName;
+    std::string previousFunctionName = currentFunctionName;
+    std::optional<std::string> previousReturnType = currentReturnType;
 
-        if (type == "int") {
-            type = "i32";
+    try {
+        currentFunctionName = function.name;
+        currentReturnType = function.returnType;
+
+        if (currentReturnType && *currentReturnType == "int") {
+            currentReturnType = "i32";
         }
 
-        if (type != "i32" && type != "i64") {
+        if (currentReturnType &&
+            *currentReturnType != "i32" &&
+            *currentReturnType != "i64") {
             throw std::runtime_error(
-                "Unsupported parameter type '" + type +
-                "' in function '" + function.name + "'."
+                "Unsupported return type '" + *currentReturnType +
+                "' in function '" + currentFunctionName + "'."
             );
         }
 
-        if (!scopes.back().emplace(parameter.name, type).second) {
+        for (const auto& parameter : function.parameters) {
+            std::string type = parameter.typeName;
+
+            if (type == "int") {
+                type = "i32";
+            }
+
+            if (type != "i32" && type != "i64") {
+                throw std::runtime_error(
+                    "Unsupported parameter type '" + type +
+                    "' in function '" + function.name + "'."
+                );
+            }
+
+            if (!scopes.back().emplace(parameter.name, type).second) {
+                throw std::runtime_error(
+                    "Duplicate parameter: " + parameter.name
+                );
+            }
+        }
+
+        analyzeStatement(*function.body);
+
+        if (currentReturnType && !alwaysReturns(*function.body)) {
             throw std::runtime_error(
-                "Duplicate parameter: " + parameter.name
+                "Not all control-flow paths return a value in function '" +
+                currentFunctionName + "'."
             );
         }
+    } catch (...) {
+        currentFunctionName.swap(previousFunctionName);
+        currentReturnType.swap(previousReturnType);
+        throw;
     }
 
-    analyzeStatement(*function.body);
-
-    endScope();
+    currentFunctionName.swap(previousFunctionName);
+    currentReturnType.swap(previousReturnType);
 }
 
 std::string SemanticAnalyzer::analyzeExpression(
@@ -306,13 +339,11 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
     if (const auto* block =
         dynamic_cast<const BlockStatement*>(&statement)) {
 
-        beginScope();
+        ScopeGuard scope(*this);
 
-        for (const auto& child : block->statements) {
-            analyzeStatement(*child);
+        for (const auto& statement : block->statements) {
+            analyzeStatement(*statement);
         }
-
-        endScope();
         return;
     }
 
@@ -340,14 +371,43 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
     if (const auto* returnStatement =
         dynamic_cast<const ReturnStatement*>(&statement)) {
 
-        analyzeExpression(*returnStatement->value);
+        if (!returnStatement->value) {
+            if (currentReturnType) {
+                throw std::runtime_error(
+                    "Function '" + currentFunctionName +
+                    "' must return a value of type " + *currentReturnType + "."
+                );
+            }
+
+            return;
+        }
+
+        if (!currentReturnType) {
+            throw std::runtime_error(
+                "Function '" + currentFunctionName +
+                "' cannot return a value because it has no declared return type."
+            );
+        }
+
+        std::string actual = analyzeExpression(*returnStatement->value);
+
+        if (actual != *currentReturnType) {
+            throw std::runtime_error(
+                "Return type mismatch in function '" + currentFunctionName +
+                "': expected " + *currentReturnType +
+                ", got " + actual + "."
+            );
+        }
+
         return;
     }
+
+
 
     if (const auto* forStatement =
         dynamic_cast<const ForStatement*>(&statement)) {
 
-        beginScope();
+        ScopeGuard loopScope(*this);
 
         for (const auto& initializer : forStatement->initializers) {
             analyzeStatement(*initializer);
@@ -360,15 +420,13 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         }
 
         analyzeStatement(*forStatement->body);
-
-        endScope();
         return;
     }
 
     if (const auto* range =
         dynamic_cast<const RangeForStatement*>(&statement)) {
 
-        beginScope();
+        ScopeGuard rangeScope(*this);
 
         std::string start = analyzeExpression(*range->start);
         std::string end = analyzeExpression(*range->end);
@@ -388,12 +446,39 @@ void SemanticAnalyzer::analyzeStatement(const Stmt& statement) {
         }
 
         analyzeStatement(*range->body);
-
-        endScope();
         return;
     }
 
     throw std::runtime_error("Unsupported statement in semantic analysis.");
 }
+bool SemanticAnalyzer::alwaysReturns(const Stmt& statement) {
+    if (dynamic_cast<const ReturnStatement*>(&statement)) {
+        return true;
+    }
 
+    if (const auto* block =
+        dynamic_cast<const BlockStatement*>(&statement)) {
+
+        for (const auto& child : block->statements) {
+            if (alwaysReturns(*child)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    if (const auto* ifStatement =
+        dynamic_cast<const IfStatement*>(&statement)) {
+
+        if (!ifStatement->elseBranch) {
+            return false;
+        }
+
+        return alwaysReturns(*ifStatement->thenBranch) &&
+               alwaysReturns(*ifStatement->elseBranch);
+    }
+
+    return false;
+}
 }

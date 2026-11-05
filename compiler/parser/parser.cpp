@@ -86,11 +86,15 @@ std::unique_ptr<Stmt> Parser::statement() {
 }
 
 std::unique_ptr<Stmt> Parser::returnStatement() {
-    auto value = expression();
+    std::unique_ptr<Expr> value = nullptr;
+
+    if (!check(TokenType::Semicolon)) {
+        value = expression();
+    }
 
     consume(
         TokenType::Semicolon,
-        "Expected ';' after return value."
+        "Expected ';' after return statement."
     );
 
     return std::make_unique<ReturnStatement>(
