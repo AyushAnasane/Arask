@@ -591,8 +591,59 @@ std::unique_ptr<Stmt> Parser::rangeForStatement(
 }
 
 std::unique_ptr<Expr> Parser::expression() {
-    return equality();
+    return logicalOr();
 }
+
+std::unique_ptr<Expr> Parser::logicalOr() {
+    auto expr = logicalAnd();
+
+    while (match(TokenType::OrOr)) {
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
+        auto right = logicalAnd();
+
+        auto binary = std::make_unique<BinaryExpr>(
+            std::move(expr),
+            op,
+            std::move(right)
+        );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
+    }
+
+    return expr;
+}
+
+std::unique_ptr<Expr> Parser::logicalAnd() {
+    auto expr = equality();
+
+    while (match(TokenType::AndAnd)) {
+        Token opToken = previous();
+        std::string op = opToken.lexeme;
+        auto right = equality();
+
+        auto binary = std::make_unique<BinaryExpr>(
+            std::move(expr),
+            op,
+            std::move(right)
+        );
+
+        binary->location = {
+            static_cast<std::size_t>(opToken.line),
+            static_cast<std::size_t>(opToken.column)
+        };
+
+        expr = std::move(binary);
+    }
+
+    return expr;
+}
+
 
 std::unique_ptr<Expr> Parser::equality() {
     auto expr = comparison();

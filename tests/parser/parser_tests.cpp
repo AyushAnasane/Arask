@@ -450,6 +450,76 @@ int main() {
     assert(argument->value == 42);
 }
 
+{
+    std::string logicalAndSource = "let result = true && false;";
+
+    Lexer logicalAndLexer(logicalAndSource);
+    auto logicalAndTokens = logicalAndLexer.scanTokens();
+
+    Parser logicalAndParser(logicalAndTokens);
+    auto logicalAndStatements = logicalAndParser.parse();
+
+    assert(logicalAndStatements.size() == 1);
+
+    auto* declaration = dynamic_cast<VariableDeclaration*>(
+        logicalAndStatements[0].get()
+    );
+
+    assert(declaration != nullptr);
+    assert(declaration->name == "result");
+
+    auto* logicalAnd = dynamic_cast<BinaryExpr*>(
+        declaration->initializer.get()
+    );
+
+    assert(logicalAnd != nullptr);
+    assert(logicalAnd->op == "&&");
+
+    auto* left = dynamic_cast<BooleanExpr*>(logicalAnd->left.get());
+    auto* right = dynamic_cast<BooleanExpr*>(logicalAnd->right.get());
+
+    assert(left != nullptr);
+    assert(right != nullptr);
+
+    assert(left->value == true);
+    assert(right->value == false);
+}
+
+{
+    std::string logicalOrSource = "let result = true || false;";
+
+    Lexer logicalOrLexer(logicalOrSource);
+    auto logicalOrTokens = logicalOrLexer.scanTokens();
+
+    Parser logicalOrParser(logicalOrTokens);
+    auto logicalOrStatements = logicalOrParser.parse();
+
+    assert(logicalOrStatements.size() == 1);
+
+    auto* declaration = dynamic_cast<VariableDeclaration*>(
+        logicalOrStatements[0].get()
+    );
+
+    assert(declaration != nullptr);
+    assert(declaration->name == "result");
+
+    auto* logicalOr = dynamic_cast<BinaryExpr*>(
+        declaration->initializer.get()
+    );
+
+    assert(logicalOr != nullptr);
+    assert(logicalOr->op == "||");
+
+    auto* left = dynamic_cast<BooleanExpr*>(logicalOr->left.get());
+    auto* right = dynamic_cast<BooleanExpr*>(logicalOr->right.get());
+
+    assert(left != nullptr);
+    assert(right != nullptr);
+
+    assert(left->value == true);
+    assert(right->value == false);
+}
+
 std::cout << "All parser tests passed!\n";
 
 return 0;

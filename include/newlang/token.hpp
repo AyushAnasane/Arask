@@ -32,7 +32,10 @@ enum class TokenType {
 
     Equal,
     EqualEqual,
+    Bang,
     BangEqual,
+    AndAnd,
+    OrOr,
     Greater,
     GreaterEqual,
     Less,

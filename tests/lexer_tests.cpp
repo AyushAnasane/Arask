@@ -65,6 +65,20 @@ int main() {
     assert(tokens3[4].type == TokenType::Arrow);
     assert(tokens3[5].type == TokenType::Identifier);
 
+    string source4 = "&& || ! != & |";
+
+    Lexer lexer4(source4);
+    auto tokens4 = lexer4.scanTokens();
+
+    assert(tokens4.size() == 7);
+    assert(tokens4[0].type == TokenType::AndAnd);
+    assert(tokens4[1].type == TokenType::OrOr);
+    assert(tokens4[2].type == TokenType::Bang);
+    assert(tokens4[3].type == TokenType::BangEqual);
+    assert(tokens4[4].type == TokenType::Ampersand);
+    assert(tokens4[5].type == TokenType::Unknown);
+    assert(tokens4[6].type == TokenType::EndOfFile);
+
     cout << "All lexer tests passed!\n";
 
     return 0;

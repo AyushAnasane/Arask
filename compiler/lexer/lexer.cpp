@@ -140,7 +140,7 @@ void Lexer::scanToken() {
                 advance();
                 addToken(TokenType::BangEqual);
             } else {
-                addToken(TokenType::Unknown);
+                addToken(TokenType::Bang);
             }
             break;
 
@@ -163,7 +163,21 @@ void Lexer::scanToken() {
             break;
 
         case '&':
-            addToken(TokenType::Ampersand);
+            if (peek() == '&') {
+                advance();
+                addToken(TokenType::AndAnd);
+            } else {
+                addToken(TokenType::Ampersand);
+            }
+            break;
+
+        case '|':
+            if (peek() == '|') {
+                advance();
+                addToken(TokenType::OrOr);
+            } else {
+                addToken(TokenType::Unknown);
+            }
             break;
 
         default:
